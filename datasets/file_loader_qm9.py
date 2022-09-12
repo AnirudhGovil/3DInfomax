@@ -45,8 +45,15 @@ def one_k_encoding(value, choices):
 
 class FileLoaderQM9(Dataset):
     """ """
-    def __init__(self, return_types=[], root='dataset/GEOM', transform=None, pre_transform=None, max_confs=10,
-                 **kwargs):
+
+    def __init__(
+            self,
+            return_types=[],
+            root='dataset/GEOM',
+            transform=None,
+            pre_transform=None,
+            max_confs=10,
+            **kwargs):
         self.max_confs = max_confs
         super(FileLoaderQM9, self).__init__(root, transform, pre_transform)
 
@@ -58,7 +65,7 @@ class FileLoaderQM9(Dataset):
     def open_pickle(self, mol_path):
         """
 
-        :param mol_path: 
+        :param mol_path:
 
         """
         with open(mol_path, "rb") as f:
@@ -73,10 +80,16 @@ class FileLoaderQM9(Dataset):
     def process(self):
         """ """
         valid_files = []
-        for pickle_file in tqdm(sorted(glob.glob(osp.join(self.root, 'qm9', '*.pickle')))):
+        for pickle_file in tqdm(
+            sorted(
+                glob.glob(
+                    osp.join(
+                self.root,
+                'qm9',
+                '*.pickle')))):
             mol_dic = self.open_pickle(pickle_file)
             data = self.featurize_mol(mol_dic)
-            if data != None:
+            if data is not None:
                 valid_files.append(pickle_file)
         torch.save(valid_files, self.processed_paths[0])
 
@@ -87,7 +100,7 @@ class FileLoaderQM9(Dataset):
     def get(self, idx):
         """
 
-        :param idx: 
+        :param idx:
 
         """
 
@@ -97,10 +110,14 @@ class FileLoaderQM9(Dataset):
         if idx in self.dihedral_pairs:
             data.edge_index_dihedral_pairs = self.dihedral_pairs[idx]
         else:
-            data.edge_index_dihedral_pairs = get_dihedral_pairs(data.edge_index, neighbors=None, data=data)
+            data.edge_index_dihedral_pairs = get_dihedral_pairs(
+                data.edge_index, neighbors=None, data=data)
 
         if 'dgl_graph' in self.return_types:
-            g = dgl.graph((data.edge_index[0], data.edge_index[1]), num_nodes=data.num_nodes)
+            g = dgl.graph(
+                (data.edge_index[0],
+                 data.edge_index[1]),
+                num_nodes=data.num_nodes)
             g.ndata['feat'] = data.x
             g.edata['feat'] = data.edge_attr
             return data, g
@@ -110,7 +127,7 @@ class FileLoaderQM9(Dataset):
     def featurize_mol(self, mol_dic):
         """
 
-        :param mol_dic: 
+        :param mol_dic:
 
         """
         confs = mol_dic['conformers']
@@ -157,7 +174,9 @@ class FileLoaderQM9(Dataset):
             if conf_canonical_smi != canonical_smi:
                 continue
 
-            pos[k] = torch.tensor(mol.GetConformer().GetPositions(), dtype=torch.float)
+            pos[k] = torch.tensor(
+                mol.GetConformer().GetPositions(),
+                dtype=torch.float)
             pos_mask[k] = 1
             k += 1
             correct_mol = mol
@@ -177,7 +196,10 @@ class FileLoaderQM9(Dataset):
             if len(n_ids) > 1:
                 neighbor_dict[i] = torch.tensor(n_ids)
             chiral_tag.append(chirality[atom.GetChiralTag()])
-            atom_features.append(torch.tensor(atom_to_feature_vector(atom), dtype=torch.long))
+            atom_features.append(
+                torch.tensor(
+                    atom_to_feature_vector(atom),
+                    dtype=torch.long))
 
         z = torch.tensor(atomic_number, dtype=torch.long)
         chiral_tag = torch.tensor(chiral_tag, dtype=torch.float)
@@ -187,7 +209,8 @@ class FileLoaderQM9(Dataset):
             start, end = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
             row += [start, end]
             col += [end, start]
-            bond_feature = torch.tensor(bond_to_feature_vector(bond), dtype=torch.long)
+            bond_feature = torch.tensor(
+                bond_to_feature_vector(bond), dtype=torch.long)
             bond_features.append(bond_feature)
             bond_features.append(bond_feature)
 
@@ -200,7 +223,17 @@ class FileLoaderQM9(Dataset):
 
         x = torch.stack(atom_features, 0)
 
-        data = Data(x=x, z=z, pos=[pos], edge_index=edge_index, edge_attr=edge_attr, neighbors=neighbor_dict,
-                    chiral_tag=chiral_tag, name=name, boltzmann_weight=conf['boltzmannweight'],
-                    degeneracy=conf['degeneracy'], mol=correct_mol, pos_mask=pos_mask)
+        data = Data(
+            x=x,
+            z=z,
+            pos=[pos],
+            edge_index=edge_index,
+            edge_attr=edge_attr,
+            neighbors=neighbor_dict,
+            chiral_tag=chiral_tag,
+            name=name,
+            boltzmann_weight=conf['boltzmannweight'],
+            degeneracy=conf['degeneracy'],
+            mol=correct_mol,
+            pos_mask=pos_mask)
         return data

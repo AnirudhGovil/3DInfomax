@@ -12,7 +12,13 @@ from models.geomol_mpnn import GeomolMLP, GeomolMetaLayer, EdgeModel, GeomolNode
 
 
 class GeomolGNNOGBFeat(nn.Module):
-    def __init__(self, hidden_dim=300, depth=3, n_layers=2, batch_norm_momentum=0.1, **kwargs):
+    def __init__(
+            self,
+            hidden_dim=300,
+            depth=3,
+            n_layers=2,
+            batch_norm_momentum=0.1,
+            **kwargs):
         super(GeomolGNNOGBFeat, self).__init__()
 
         self.depth = depth
@@ -23,8 +29,15 @@ class GeomolGNNOGBFeat(nn.Module):
                                    batch_norm_momentum=batch_norm_momentum)
         self.edge_init = GeomolMLP(hidden_dim, hidden_dim, num_layers=2,
                                    batch_norm_momentum=batch_norm_momentum)
-        self.update = GeomolMetaLayer(EdgeModel(hidden_dim, n_layers, batch_norm_momentum=batch_norm_momentum),
-                                      GeomolNodeModel(hidden_dim, n_layers, batch_norm_momentum=batch_norm_momentum))
+        self.update = GeomolMetaLayer(
+            EdgeModel(
+                hidden_dim,
+                n_layers,
+                batch_norm_momentum=batch_norm_momentum),
+            GeomolNodeModel(
+                hidden_dim,
+                n_layers,
+                batch_norm_momentum=batch_norm_momentum))
 
     def forward(self, x, edge_index, edge_attr, **kwargs):
         x = self.atom_encoder(x)
@@ -37,11 +50,17 @@ class GeomolGNNOGBFeat(nn.Module):
 
 
 class GeomolGNNWrapperOGBFeat(nn.Module):
-    def __init__(self, hidden_dim, target_dim, readout_hidden_dim=None, readout_layers=2, readout_batchnorm=True,
-                 **kwargs):
+    def __init__(
+            self,
+            hidden_dim,
+            target_dim,
+            readout_hidden_dim=None,
+            readout_layers=2,
+            readout_batchnorm=True,
+            **kwargs):
         super(GeomolGNNWrapperOGBFeat, self).__init__()
 
-        if readout_hidden_dim == None:
+        if readout_hidden_dim is None:
             readout_hidden_dim = hidden_dim
         self.node_gnn = GeomolGNNOGBFeat(hidden_dim=hidden_dim, **kwargs)
         self.output = MLP(in_dim=hidden_dim, hidden_size=readout_hidden_dim,
@@ -53,4 +72,3 @@ class GeomolGNNWrapperOGBFeat(nn.Module):
         x, edge_attr = self.node_gnn(x, edge_index, edge_attr)
         pooled = global_mean_pool(x, batch)
         return self.output(pooled)
-

@@ -38,14 +38,21 @@ def one_k_encoding(value, choices):
 
 class PyGGeomolGeomQM9(InMemoryDataset):
     """ """
-    def __init__(self, return_types=[], root='dataset/GEOM/qm9', transform=None, pre_transform=None, max_confs = 10, **kwargs):
+
+    def __init__(
+            self,
+            return_types=[],
+            root='dataset/GEOM/qm9',
+            transform=None,
+            pre_transform=None,
+            max_confs=10,
+            **kwargs):
         self.max_confs = max_confs
         super(PyGGeomolGeomQM9, self).__init__(root, transform, pre_transform)
         self.root = root
         self.return_types = return_types
 
         self.data, self.slices = torch.load(self.processed_paths[0])
-
 
     @property
     def processed_file_names(self):
@@ -59,12 +66,15 @@ class PyGGeomolGeomQM9(InMemoryDataset):
     def get(self, idx):
         """
 
-        :param idx: 
+        :param idx:
 
         """
         data = self.data[idx]
         if 'dgl_graph' in self.return_types:
-            g = dgl.graph((data.edge_index[0], data.edge_index[1]),num_nodes=data.num_nodes)
+            g = dgl.graph(
+                (data.edge_index[0],
+                 data.edge_index[1]),
+                num_nodes=data.num_nodes)
             g.ndata['feat'] = data.x
             g.edata['feat'] = data.edge_attr
             return data, g
@@ -74,7 +84,7 @@ class PyGGeomolGeomQM9(InMemoryDataset):
     def open_pickle(self, mol_path):
         """
 
-        :param mol_path: 
+        :param mol_path:
 
         """
         with open(mol_path, "rb") as f:
@@ -88,7 +98,7 @@ class PyGGeomolGeomQM9(InMemoryDataset):
         for pickle_file in tqdm(pickle_files):
             mol_dic = self.open_pickle(pickle_file)
             data = self.featurize_mol(mol_dic)
-            if data != None:
+            if data is not None:
                 data_list.append(data)
         data, slices = self.collate(data_list)
         torch.save((data, slices), self.processed_paths[0])
@@ -96,7 +106,7 @@ class PyGGeomolGeomQM9(InMemoryDataset):
     def featurize_mol(self, mol_dic):
         """
 
-        :param mol_dic: 
+        :param mol_dic:
 
         """
         confs = mol_dic['conformers']
@@ -143,7 +153,9 @@ class PyGGeomolGeomQM9(InMemoryDataset):
             if conf_canonical_smi != canonical_smi:
                 continue
 
-            pos[k] = torch.tensor(mol.GetConformer().GetPositions(), dtype=torch.float)
+            pos[k] = torch.tensor(
+                mol.GetConformer().GetPositions(),
+                dtype=torch.float)
             pos_mask[k] = 1
             k += 1
             correct_mol = mol
@@ -163,7 +175,10 @@ class PyGGeomolGeomQM9(InMemoryDataset):
             if len(n_ids) > 1:
                 neighbor_dict[i] = torch.tensor(n_ids)
             chiral_tag.append(chirality[atom.GetChiralTag()])
-            atom_features.append(torch.tensor(atom_to_feature_vector(atom),dtype=torch.long))
+            atom_features.append(
+                torch.tensor(
+                    atom_to_feature_vector(atom),
+                    dtype=torch.long))
 
         z = torch.tensor(atomic_number, dtype=torch.long)
         chiral_tag = torch.tensor(chiral_tag, dtype=torch.float)
@@ -173,12 +188,13 @@ class PyGGeomolGeomQM9(InMemoryDataset):
             start, end = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
             row += [start, end]
             col += [end, start]
-            bond_feature = torch.tensor(bond_to_feature_vector(bond), dtype=torch.long)
+            bond_feature = torch.tensor(
+                bond_to_feature_vector(bond), dtype=torch.long)
             bond_features.append(bond_feature)
             bond_features.append(bond_feature)
 
         edge_index = torch.tensor([row, col], dtype=torch.long)
-        edge_attr = torch.stack(bond_features,dim=0)
+        edge_attr = torch.stack(bond_features, dim=0)
 
         perm = (edge_index[0] * N + edge_index[1]).argsort()
         edge_index = edge_index[:, perm]
@@ -186,7 +202,17 @@ class PyGGeomolGeomQM9(InMemoryDataset):
 
         x = torch.stack(atom_features, 0)
 
-        data = Data(x=x, z=z, pos=[pos], edge_index=edge_index, edge_attr=edge_attr, neighbors=neighbor_dict,
-                    chiral_tag=chiral_tag, name=name, boltzmann_weight=conf['boltzmannweight'],
-                    degeneracy=conf['degeneracy'], mol=correct_mol, pos_mask=pos_mask)
+        data = Data(
+            x=x,
+            z=z,
+            pos=[pos],
+            edge_index=edge_index,
+            edge_attr=edge_attr,
+            neighbors=neighbor_dict,
+            chiral_tag=chiral_tag,
+            name=name,
+            boltzmann_weight=conf['boltzmannweight'],
+            degeneracy=conf['degeneracy'],
+            mol=correct_mol,
+            pos_mask=pos_mask)
         return data

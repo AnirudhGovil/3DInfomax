@@ -22,7 +22,12 @@ hartree2eV = physical_constants['hartree-electron volt relationship'][0]
 class InferenceDataset(Dataset):
     """ """
 
-    def __init__(self, smiles_txt_path, device='cuda:0', transform=None, **kwargs):
+    def __init__(
+            self,
+            smiles_txt_path,
+            device='cuda:0',
+            transform=None,
+            **kwargs):
         with open(smiles_txt_path) as file:
             lines = file.readlines()
             smiles_list = [line.rstrip() for line in lines]
@@ -35,16 +40,21 @@ class InferenceDataset(Dataset):
         total_edges = 0
         n_atoms_list = []
         for mol_idx, smiles in tqdm(enumerate(smiles_list)):
-            # get the molecule using the smiles representation from the csv file
+            # get the molecule using the smiles representation from the csv
+            # file
             mol = Chem.MolFromSmiles(smiles)
-            # add hydrogen bonds to molecule because they are not in the smiles representation
+            # add hydrogen bonds to molecule because they are not in the smiles
+            # representation
             mol = Chem.AddHs(mol)
             n_atoms = mol.GetNumAtoms()
 
             atom_features_list = []
             for atom in mol.GetAtoms():
                 atom_features_list.append(atom_to_feature_vector(atom))
-            all_atom_features.append(torch.tensor(atom_features_list, dtype=torch.long))
+            all_atom_features.append(
+                torch.tensor(
+                    atom_features_list,
+                    dtype=torch.long))
 
             edges_list = []
             edge_features_list = []

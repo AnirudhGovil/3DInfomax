@@ -9,6 +9,7 @@ from torch import nn
 from models.base_layers import MLP
 from models.pna import PNAGNN
 
+
 class PNAFrozen(nn.Module):
     """
     Message Passing Neural Network that does not use 3D information
@@ -56,16 +57,23 @@ class PNAFrozen(nn.Module):
                                batch_norm_momentum=batch_norm_momentum
                                )
         self.node_gnn.requires_grad_(False)
-        if readout_hidden_dim == None:
+        if readout_hidden_dim is None:
             readout_hidden_dim = hidden_dim
         self.readout_aggregators = readout_aggregators
-        self.output = MLP(in_dim=hidden_dim * len(self.readout_aggregators), hidden_size=readout_hidden_dim,
-                          mid_batch_norm=readout_batchnorm, out_dim=target_dim,
-                          layers=readout_layers, batch_norm_momentum=batch_norm_momentum)
+        self.output = MLP(in_dim=hidden_dim * len(self.readout_aggregators),
+                          hidden_size=readout_hidden_dim,
+                          mid_batch_norm=readout_batchnorm,
+                          out_dim=target_dim,
+                          layers=readout_layers,
+                          batch_norm_momentum=batch_norm_momentum)
 
     def forward(self, graph: dgl.DGLGraph):
         with torch.no_grad():
             self.node_gnn(graph)
-        readouts_to_cat = [dgl.readout_nodes(graph, 'feat', op=aggr) for aggr in self.readout_aggregators]
+        readouts_to_cat = [
+            dgl.readout_nodes(
+                graph,
+                'feat',
+                op=aggr) for aggr in self.readout_aggregators]
         readout = torch.cat(readouts_to_cat, dim=-1)
         return self.output(readout)

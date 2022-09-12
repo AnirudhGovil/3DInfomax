@@ -53,8 +53,20 @@ def one_k_encoding(value, choices):
 
 class BBBPGeomolQM9Featurization(InMemoryDataset):
     """ """
-    def __init__(self, split='train', root='dataset/bbbp', transform=None, pre_transform=None, device='cuda:0'):
-        super(BBBPGeomolQM9Featurization, self).__init__(root, transform, pre_transform)
+
+    def __init__(
+            self,
+            split='train',
+            root='dataset/bbbp',
+            transform=None,
+            pre_transform=None,
+            device='cuda:0'):
+        super(
+            BBBPGeomolQM9Featurization,
+            self).__init__(
+            root,
+            transform,
+            pre_transform)
         split_idx = ['train', 'val', 'test'].index(split)
         self.device = device
         self.data, self.slices = torch.load(self.processed_paths[split_idx])
@@ -67,7 +79,10 @@ class BBBPGeomolQM9Featurization(InMemoryDataset):
     @property
     def processed_file_names(self):
         """ """
-        return ['processed_train_qm9_featurization.pt', 'processed_val_qm9_featurization.pt', 'processed_test_qm9_featurization.pt']
+        return [
+            'processed_train_qm9_featurization.pt',
+            'processed_val_qm9_featurization.pt',
+            'processed_test_qm9_featurization.pt']
 
     def __getitem__(self, idx):
         data = self.get(self.indices()[idx])
@@ -97,7 +112,8 @@ class BBBPGeomolQM9Featurization(InMemoryDataset):
                         pyg_graph.y = csv_file['p_np'][i]
                         data_list.append(pyg_graph)
                     except Exception as e:
-                        print('rdkit failed for this smiles and it was excluded: ', smiles)
+                        print(
+                            'rdkit failed for this smiles and it was excluded: ', smiles)
                         print('this was rdkits error message: ', e)
             data, slices = self.collate(data_list)
             torch.save((data, slices), self.processed_paths[split_idx])
@@ -110,7 +126,7 @@ types = {'H': 0, 'C': 1, 'N': 2, 'O': 3, 'F': 4}
 def featurize_mol_from_smiles(smiles):
     """
 
-    :param smiles: 
+    :param smiles:
 
     """
     mol = Chem.MolFromSmiles(smiles)
@@ -133,22 +149,30 @@ def featurize_mol_from_smiles(smiles):
         atomic_number.append(atom.GetAtomicNum())
         atom_features.extend([atom.GetAtomicNum(),
                               1 if atom.GetIsAromatic() else 0])
-        atom_features.extend(one_k_encoding(atom.GetDegree(), [0, 1, 2, 3, 4, 5, 6]))
+        atom_features.extend(
+            one_k_encoding(
+                atom.GetDegree(), [
+                    0, 1, 2, 3, 4, 5, 6]))
         atom_features.extend(one_k_encoding(atom.GetHybridization(), [
             Chem.rdchem.HybridizationType.SP,
             Chem.rdchem.HybridizationType.SP2,
             Chem.rdchem.HybridizationType.SP3,
             Chem.rdchem.HybridizationType.SP3D,
             Chem.rdchem.HybridizationType.SP3D2]))
-        atom_features.extend(one_k_encoding(atom.GetImplicitValence(), [0, 1, 2, 3, 4, 5, 6]))
-        atom_features.extend(one_k_encoding(atom.GetFormalCharge(), [-1, 0, 1]))
+        atom_features.extend(
+            one_k_encoding(
+                atom.GetImplicitValence(), [
+                    0, 1, 2, 3, 4, 5, 6]))
+        atom_features.extend(one_k_encoding(
+            atom.GetFormalCharge(), [-1, 0, 1]))
         atom_features.extend([int(ring.IsAtomInRingOfSize(i, 3)),
                               int(ring.IsAtomInRingOfSize(i, 4)),
                               int(ring.IsAtomInRingOfSize(i, 5)),
                               int(ring.IsAtomInRingOfSize(i, 6)),
                               int(ring.IsAtomInRingOfSize(i, 7)),
                               int(ring.IsAtomInRingOfSize(i, 8))])
-        atom_features.extend(one_k_encoding(int(ring.NumAtomRings(i)), [0, 1, 2, 3]))
+        atom_features.extend(one_k_encoding(
+            int(ring.NumAtomRings(i)), [0, 1, 2, 3]))
 
     z = torch.tensor(atomic_number, dtype=torch.long)
     chiral_tag = torch.tensor(chiral_tag, dtype=torch.float)
@@ -159,8 +183,8 @@ def featurize_mol_from_smiles(smiles):
         row += [start, end]
         col += [end, start]
         edge_type += 2 * [bonds[bond.GetBondType()]]
-        bt = tuple(
-            sorted([bond.GetBeginAtom().GetAtomicNum(), bond.GetEndAtom().GetAtomicNum()])), bond.GetBondTypeAsDouble()
+        bt = tuple(sorted([bond.GetBeginAtom().GetAtomicNum(
+        ), bond.GetEndAtom().GetAtomicNum()])), bond.GetBondTypeAsDouble()
         bond_features += 2 * [int(bond.IsInRing()),
                               int(bond.GetIsConjugated()),
                               int(bond.GetIsAromatic())]
@@ -184,6 +208,12 @@ def featurize_mol_from_smiles(smiles):
     x2 = torch.tensor(atom_features).view(N, -1)
     x = torch.cat([x1.to(torch.float), x2], dim=-1)
 
-    data = Data(z=x, edge_index=edge_index, edge_attr=edge_attr, neighbors=neighbor_dict, chiral_tag=chiral_tag,
-                name=smiles, num_nodes=N)
+    data = Data(
+        z=x,
+        edge_index=edge_index,
+        edge_attr=edge_attr,
+        neighbors=neighbor_dict,
+        chiral_tag=chiral_tag,
+        name=smiles,
+        num_nodes=N)
     return data

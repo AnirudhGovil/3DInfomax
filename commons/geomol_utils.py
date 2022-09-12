@@ -23,7 +23,7 @@ def get_neighbor_ids(data):
     """Turns neighbors dicts into the correct indices for the batched graph
     Note: this only includes atoms with degree > 1
 
-    :param data: 
+    :param data:
 
     """
     # start, end = edge_index
@@ -47,8 +47,8 @@ def get_neighbor_bonds(edge_index, bond_type):
     """Takes the edge indices and bond type and returns dictionary mapping atom index to neighbor bond types
     Note: this only includes atoms with degree > 1
 
-    :param edge_index: 
-    :param bond_type: 
+    :param edge_index:
+    :param bond_type:
 
     """
     start, end = edge_index
@@ -63,15 +63,16 @@ def get_leaf_hydrogens(neighbors, x):
     Note: this only works because degree = 1 and hydrogen atomic number = 1 (checks when 1 == 1)
     Note: we use the 5th feature index bc this corresponds to the atomic number
 
-    :param neighbors: 
-    :param x: 
+    :param neighbors:
+    :param x:
 
     """
     # start, end = edge_index
     # degrees = degree(end)
     # idxs, vals = torch.unique(start, return_counts=True)
     # vs = torch.split_with_sizes(end, tuple(vals))
-    # return {k.item(): degrees[v] == x[v, 5] for k, v in zip(idxs, vs) if len(v) > 1}
+    # return {k.item(): degrees[v] == x[v, 5] for k, v in zip(idxs, vs) if
+    # len(v) > 1}
     leaf_hydrogens = {}
     h_mask = x[:, 0] == 1
     for k, v in neighbors.items():
@@ -82,19 +83,23 @@ def get_leaf_hydrogens(neighbors, x):
 def get_dihedral_pairs(edge_index, neighbors, data):
     """Given edge indices, return pairs of indices that we must calculate dihedrals for
 
-    :param edge_index: 
-    :param neighbors: 
-    :param data: 
+    :param edge_index:
+    :param neighbors:
+    :param data:
 
     """
     start, end = edge_index
     degrees = degree(end)
-    dihedral_pairs_true = torch.nonzero(torch.logical_and(degrees[start] > 1, degrees[end] > 1))
+    dihedral_pairs_true = torch.nonzero(
+        torch.logical_and(
+            degrees[start] > 1,
+            degrees[end] > 1))
 
     dihedral_pairs = edge_index[:, dihedral_pairs_true].squeeze(-1)
 
     # # first method which removes one (pseudo) random edge from a cycle
-    dihedral_idxs = torch.nonzero(dihedral_pairs.sort(dim=0).indices[0, :] == 0).squeeze().detach().cpu().numpy()
+    dihedral_idxs = torch.nonzero(dihedral_pairs.sort(
+        dim=0).indices[0, :] == 0).squeeze().detach().cpu().numpy()
 
     # prioritize rings for assigning dihedrals
     dihedral_pairs = dihedral_pairs.t()[dihedral_idxs]
@@ -140,18 +145,22 @@ def batch_distance_metrics_from_coords(coords, mask):
     """Given coordinates of neighboring atoms, compute bond
     distances and 2-hop distances in local neighborhood
 
-    :param coords: 
-    :param mask: 
+    :param coords:
+    :param mask:
 
     """
     d_mat_mask = mask.unsqueeze(1) * mask.unsqueeze(2)
 
     if coords.dim() == 4:
-        two_dop_d_mat = torch.square(coords.unsqueeze(1) - coords.unsqueeze(2) + 1e-10).sum(dim=-1).sqrt() * d_mat_mask.unsqueeze(-1)
-        one_hop_ds = torch.linalg.norm(torch.zeros_like(coords[0]).unsqueeze(0) - coords, dim=-1)
+        two_dop_d_mat = torch.square(coords.unsqueeze(
+            1) - coords.unsqueeze(2) + 1e-10).sum(dim=-1).sqrt() * d_mat_mask.unsqueeze(-1)
+        one_hop_ds = torch.linalg.norm(torch.zeros_like(
+            coords[0]).unsqueeze(0) - coords, dim=-1)
     elif coords.dim() == 5:
-        two_dop_d_mat = torch.square(coords.unsqueeze(2) - coords.unsqueeze(3) + 1e-10).sum(dim=-1).sqrt() * d_mat_mask.unsqueeze(-1).unsqueeze(1)
-        one_hop_ds = torch.linalg.norm(torch.zeros_like(coords[0]).unsqueeze(0) - coords, dim=-1)
+        two_dop_d_mat = torch.square(coords.unsqueeze(
+            2) - coords.unsqueeze(3) + 1e-10).sum(dim=-1).sqrt() * d_mat_mask.unsqueeze(-1).unsqueeze(1)
+        one_hop_ds = torch.linalg.norm(torch.zeros_like(
+            coords[0]).unsqueeze(0) - coords, dim=-1)
 
     return one_hop_ds, two_dop_d_mat
 
@@ -159,8 +168,8 @@ def batch_distance_metrics_from_coords(coords, mask):
 def batch_angle_between_vectors(a, b):
     """Compute angle between two batches of input vectors
 
-    :param a: 
-    :param b: 
+    :param a:
+    :param b:
 
     """
     inner_product = (a * b).sum(dim=-1)
@@ -179,20 +188,24 @@ def batch_angle_between_vectors(a, b):
 def batch_angles_from_coords(coords, mask):
     """Given coordinates, compute all local neighborhood angles
 
-    :param coords: 
-    :param mask: 
+    :param coords:
+    :param mask:
 
     """
     if coords.dim() == 4:
         all_possible_combos = coords[:, angle_combos.to(coords.device)]
-        v_a, v_b = all_possible_combos.split(1, dim=2)  # does one of these need to be negative?
+        # does one of these need to be negative?
+        v_a, v_b = all_possible_combos.split(1, dim=2)
         angle_mask = angle_mask_ref.to(coords.device)[mask.sum(dim=1).long()]
-        angles = batch_angle_between_vectors(v_a.squeeze(2), v_b.squeeze(2)) * angle_mask.unsqueeze(-1)
+        angles = batch_angle_between_vectors(v_a.squeeze(
+            2), v_b.squeeze(2)) * angle_mask.unsqueeze(-1)
     elif coords.dim() == 5:
         all_possible_combos = coords[:, :, angle_combos.to(coords.device)]
-        v_a, v_b = all_possible_combos.split(1, dim=3)  # does one of these need to be negative?
+        # does one of these need to be negative?
+        v_a, v_b = all_possible_combos.split(1, dim=3)
         angle_mask = angle_mask_ref.to(coords.device)[mask.sum(dim=1).long()]
-        angles = batch_angle_between_vectors(v_a.squeeze(3), v_b.squeeze(3)) * angle_mask.unsqueeze(-1).unsqueeze(-1)
+        angles = batch_angle_between_vectors(v_a.squeeze(
+            3), v_b.squeeze(3)) * angle_mask.unsqueeze(-1).unsqueeze(-1)
 
     return angles
 
@@ -202,11 +215,12 @@ def batch_local_stats_from_coords(coords, mask):
     2-hop distances, and angles in local neighborhood (this assumes
     the central atom has coordinates at the origin)
 
-    :param coords: 
-    :param mask: 
+    :param coords:
+    :param mask:
 
     """
-    one_hop_ds, two_dop_d_mat = batch_distance_metrics_from_coords(coords, mask)
+    one_hop_ds, two_dop_d_mat = batch_distance_metrics_from_coords(
+        coords, mask)
     angles = batch_angles_from_coords(coords, mask)
     return one_hop_ds, two_dop_d_mat, angles
 
@@ -214,10 +228,10 @@ def batch_local_stats_from_coords(coords, mask):
 def batch_dihedrals(p0, p1, p2, p3, angle=False):
     """
 
-    :param p0: 
-    :param p1: 
-    :param p2: 
-    :param p3: 
+    :param p0:
+    :param p1:
+    :param p2:
+    :param p3:
     :param angle:  (Default value = False)
 
     """
@@ -226,24 +240,38 @@ def batch_dihedrals(p0, p1, p2, p3, angle=False):
     s2 = p2 - p1
     s3 = p3 - p2
 
-    sin_d_ = torch.linalg.norm(s2, dim=-1) * torch.sum(s1 * torch.cross(s2, s3, dim=-1), dim=-1)
-    cos_d_ = torch.sum(torch.cross(s1, s2, dim=-1) * torch.cross(s2, s3, dim=-1), dim=-1)
+    sin_d_ = torch.linalg.norm(
+        s2, dim=-1) * torch.sum(s1 * torch.cross(s2, s3, dim=-1), dim=-1)
+    cos_d_ = torch.sum(
+        torch.cross(
+            s1,
+            s2,
+            dim=-
+            1) *
+        torch.cross(
+            s2,
+            s3,
+            dim=-
+            1),
+        dim=-
+        1)
 
     if angle:
         return torch.atan2(sin_d_, cos_d_ + 1e-10)
 
     else:
-        den = torch.linalg.norm(torch.cross(s1, s2, dim=-1), dim=-1) * torch.linalg.norm(torch.cross(s2, s3, dim=-1), dim=-1) + 1e-10
-        return sin_d_/den, cos_d_/den
+        den = torch.linalg.norm(torch.cross(s1, s2, dim=-1), dim=-1) * \
+            torch.linalg.norm(torch.cross(s2, s3, dim=-1), dim=-1) + 1e-10
+        return sin_d_ / den, cos_d_ / den
 
 
 def batch_vector_angles(xn, x, y, yn):
     """
 
-    :param xn: 
-    :param x: 
-    :param y: 
-    :param yn: 
+    :param xn:
+    :param x:
+    :param y:
+    :param yn:
 
     """
     uT = xn.view(-1, 3)
@@ -254,7 +282,8 @@ def batch_vector_angles(xn, x, y, yn):
     b1 = uT - uX
     b2 = uZ - uY
 
-    num = torch.bmm(b1.view(-1, 1, 3), b2.view(-1, 3, 1)).squeeze(-1).squeeze(-1)
+    num = torch.bmm(b1.view(-1, 1, 3), b2.view(-1, 3, 1)
+                    ).squeeze(-1).squeeze(-1)
     den = torch.linalg.norm(b1, dim=-1) * torch.linalg.norm(b2, dim=-1) + 1e-10
 
     return (num / den).view(-1, 9)
@@ -273,7 +302,7 @@ def von_Mises_loss(a, b, a_sin=None, b_sin=None):
     if torch.is_tensor(a_sin):
         out = a * b + a_sin * b_sin
     else:
-        out = a * b + torch.sqrt(1-a**2 + 1e-5) * torch.sqrt(1-b**2 + 1e-5)
+        out = a * b + torch.sqrt(1 - a**2 + 1e-5) * torch.sqrt(1 - b**2 + 1e-5)
     return out
 
 
@@ -292,16 +321,20 @@ def rotation_matrix(neighbor_coords, neighbor_mask, neighbor_map, mu=None):
 
     if not torch.is_tensor(mu):
         # mu = neighbor_coords.sum(dim=1, keepdim=True) / (neighbor_mask.sum(dim=-1, keepdim=True).unsqueeze(-1).unsqueeze(-1) + 1e-10)
-        mu_num = neighbor_coords[~neighbor_map.bool()].view(neighbor_coords.size(0), 3, neighbor_coords.size(2), -1).sum(dim=1)
-        mu_den = (neighbor_mask.sum(dim=-1, keepdim=True).unsqueeze(-1) - 1 + 1e-10)
+        mu_num = neighbor_coords[~neighbor_map.bool()].view(
+            neighbor_coords.size(0), 3, neighbor_coords.size(2), -1).sum(dim=1)
+        mu_den = (neighbor_mask.sum(dim=-1,
+                                    keepdim=True).unsqueeze(-1) - 1 + 1e-10)
         mu = mu_num / mu_den  # (n_dihedral_pairs, n_model_confs, 10)
         mu = mu.squeeze(1)  # (n_dihedral_pairs, n_model_confs, 10)
 
     p_Y = neighbor_coords[neighbor_map.bool(), :]
-    h1 = p_Y / (torch.linalg.norm(p_Y, dim=-1, keepdim=True) + 1e-10)  # (n_dihedral_pairs, n_model_confs, 10)
+    h1 = p_Y / (torch.linalg.norm(p_Y, dim=-1, keepdim=True) +
+                1e-10)  # (n_dihedral_pairs, n_model_confs, 10)
 
     h3_1 = torch.cross(p_Y, mu, dim=-1)
-    h3 = h3_1 / (torch.linalg.norm(h3_1, dim=-1, keepdim=True) + 1e-10)  # (n_dihedral_pairs, n_model_confs, 10)
+    h3 = h3_1 / (torch.linalg.norm(h3_1, dim=-1, keepdim=True) +
+                 1e-10)  # (n_dihedral_pairs, n_model_confs, 10)
 
     h2 = -torch.cross(h1, h3, dim=-1)  # (n_dihedral_pairs, n_model_confs, 10)
 
@@ -327,13 +360,19 @@ def rotation_matrix_v2(neighbor_coords, neighbor_mask, neighbor_map):
     p_Y = neighbor_coords[neighbor_map.bool(), :]
 
     eta_1 = torch.rand_like(p_Y)
-    eta_2 = eta_1 - torch.sum(eta_1 * p_Y, dim=-1, keepdim=True) / (torch.linalg.norm(p_Y, dim=-1, keepdim=True)**2 + 1e-10) * p_Y
+    eta_2 = eta_1 - torch.sum(eta_1 * p_Y,
+                              dim=-1,
+                              keepdim=True) / (torch.linalg.norm(p_Y,
+                                                                 dim=-1,
+                                                                 keepdim=True)**2 + 1e-10) * p_Y
     eta = eta_2 / torch.linalg.norm(eta_2, dim=-1, keepdim=True)
 
-    h1 = p_Y / (torch.linalg.norm(p_Y, dim=-1, keepdim=True) + 1e-10)  # (n_dihedral_pairs, n_model_confs, 10)
+    h1 = p_Y / (torch.linalg.norm(p_Y, dim=-1, keepdim=True) +
+                1e-10)  # (n_dihedral_pairs, n_model_confs, 10)
 
     h3_1 = torch.cross(p_Y, eta, dim=-1)
-    h3 = h3_1 / (torch.linalg.norm(h3_1, dim=-1, keepdim=True) + 1e-10)  # (n_dihedral_pairs, n_model_confs, 10)
+    h3 = h3_1 / (torch.linalg.norm(h3_1, dim=-1, keepdim=True) +
+                 1e-10)  # (n_dihedral_pairs, n_model_confs, 10)
 
     h2 = -torch.cross(h1, h3, dim=-1)  # (n_dihedral_pairs, n_model_confs, 10)
 
@@ -370,7 +409,9 @@ def rotation_matrix_inf(neighbor_coords, neighbor_mask, neighbor_map):
 
     """
 
-    mu = neighbor_coords.sum(dim=0, keepdim=True) / (neighbor_mask.sum(dim=-1, keepdim=True).unsqueeze(-1) + 1e-10)
+    mu = neighbor_coords.sum(dim=0,
+                             keepdim=True) / (neighbor_mask.sum(dim=-1,
+                                                                keepdim=True).unsqueeze(-1) + 1e-10)
     mu = mu.squeeze(0)
     p_Y = neighbor_coords[neighbor_map.bool(), :].squeeze(0)
 
@@ -391,12 +432,13 @@ def rotation_matrix_inf(neighbor_coords, neighbor_mask, neighbor_map):
 def build_alpha_rotation_inf(alpha, n_model_confs):
     """
 
-    :param alpha: 
-    :param n_model_confs: 
+    :param alpha:
+    :param n_model_confs:
 
     """
 
-    H_alpha = torch.FloatTensor([[[1, 0, 0], [0, 0, 0], [0, 0, 0]]]).repeat(n_model_confs, 1, 1)
+    H_alpha = torch.FloatTensor(
+        [[[1, 0, 0], [0, 0, 0], [0, 0, 0]]]).repeat(n_model_confs, 1, 1)
     H_alpha[:, 1, 1] = torch.cos(alpha)
     H_alpha[:, 1, 2] = -torch.sin(alpha)
     H_alpha[:, 2, 1] = torch.sin(alpha)
@@ -408,7 +450,7 @@ def build_alpha_rotation_inf(alpha, n_model_confs):
 def random_rotation_matrix(dim):
     """
 
-    :param dim: 
+    :param dim:
 
     """
     yaw = torch.rand(dim)
@@ -416,18 +458,18 @@ def random_rotation_matrix(dim):
     roll = torch.rand(dim)
 
     R = torch.stack([torch.stack([torch.cos(yaw) * torch.cos(pitch),
-                                  torch.cos(yaw) * torch.sin(pitch) * torch.sin(roll) - torch.sin(yaw) * torch.cos(
-                                      roll),
-                                  torch.cos(yaw) * torch.sin(pitch) * torch.cos(roll) + torch.sin(yaw) * torch.sin(
-                                      roll)], dim=-1),
+                                  torch.cos(yaw) * torch.sin(pitch) * torch.sin(roll) - torch.sin(yaw) * torch.cos(roll),
+                                  torch.cos(yaw) * torch.sin(pitch) * torch.cos(roll) + torch.sin(yaw) * torch.sin(roll)],
+                                 dim=-1),
                      torch.stack([torch.sin(yaw) * torch.cos(pitch),
-                                  torch.sin(yaw) * torch.sin(pitch) * torch.sin(roll) + torch.cos(yaw) * torch.cos(
-                                      roll),
-                                  torch.sin(yaw) * torch.sin(pitch) * torch.cos(roll) - torch.cos(yaw) * torch.sin(
-                                      roll)], dim=-1),
+                                  torch.sin(yaw) * torch.sin(pitch) * torch.sin(roll) + torch.cos(yaw) * torch.cos(roll),
+                                  torch.sin(yaw) * torch.sin(pitch) * torch.cos(roll) - torch.cos(yaw) * torch.sin(roll)],
+                    dim=-1),
                      torch.stack([-torch.sin(pitch),
                                   torch.cos(pitch) * torch.sin(roll),
-                                  torch.cos(pitch) * torch.cos(roll)], dim=-1)], dim=-2)
+                                  torch.cos(pitch) * torch.cos(roll)],
+                    dim=-1)],
+                    dim=-2)
 
     return R
 
@@ -435,7 +477,7 @@ def random_rotation_matrix(dim):
 def length_to_mask(length, max_len=None, dtype=None):
     """length: B.
 
-    :param length: 
+    :param length:
     :param max_len:  (Default value = None)
     :param dtype:  (Default value = None)
     :returns: If max_len is None, then max of length will be used.
@@ -443,8 +485,12 @@ def length_to_mask(length, max_len=None, dtype=None):
     """
     assert len(length.shape) == 1, 'Length shape should be 1 dimensional.'
     max_len = max_len or length.max().item()
-    mask = torch.arange(max_len, device=length.device,
-                        dtype=length.dtype).expand(len(length), max_len) < length.unsqueeze(1)
+    mask = torch.arange(
+        max_len,
+        device=length.device,
+        dtype=length.dtype).expand(
+        len(length),
+        max_len) < length.unsqueeze(1)
     if dtype is not None:
         mask = torch.as_tensor(mask, dtype=dtype, device=length.device)
     return mask

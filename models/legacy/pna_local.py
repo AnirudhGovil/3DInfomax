@@ -38,27 +38,29 @@ class PNALocal(nn.Module):
                  **kwargs):
         super(PNALocal, self).__init__()
         self.node_gnn = PNAGNN(node_dim=node_dim,
-                          edge_dim=edge_dim,
-                          hidden_dim=hidden_dim,
-                          aggregators=aggregators,
-                          scalers=scalers,
-                          residual=residual,
-                          pairwise_distances=pairwise_distances,
-                          activation=activation,
-                          last_activation=last_activation,
-                          mid_batch_norm=mid_batch_norm,
-                          last_batch_norm=last_batch_norm,
-                          propagation_depth=propagation_depth,
-                          dropout=dropout,
-                          posttrans_layers=posttrans_layers,
-                          pretrans_layers=pretrans_layers
-                          )
-        if readout_hidden_dim == None:
+                               edge_dim=edge_dim,
+                               hidden_dim=hidden_dim,
+                               aggregators=aggregators,
+                               scalers=scalers,
+                               residual=residual,
+                               pairwise_distances=pairwise_distances,
+                               activation=activation,
+                               last_activation=last_activation,
+                               mid_batch_norm=mid_batch_norm,
+                               last_batch_norm=last_batch_norm,
+                               propagation_depth=propagation_depth,
+                               dropout=dropout,
+                               posttrans_layers=posttrans_layers,
+                               pretrans_layers=pretrans_layers
+                               )
+        if readout_hidden_dim is None:
             readout_hidden_dim = hidden_dim
-        self.projection_head = MLP(in_dim=hidden_dim, hidden_size=readout_hidden_dim,
-                          mid_batch_norm=readout_batchnorm, out_dim=target_dim,
-                          layers=readout_layers)
-
+        self.projection_head = MLP(
+            in_dim=hidden_dim,
+            hidden_size=readout_hidden_dim,
+            mid_batch_norm=readout_batchnorm,
+            out_dim=target_dim,
+            layers=readout_layers)
 
     def forward(self, graph: dgl.DGLGraph):
         self.node_gnn(graph)

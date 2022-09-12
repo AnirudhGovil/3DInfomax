@@ -8,8 +8,17 @@ from models.base_layers import MLP
 
 
 class EGNNDistEmbedding(nn.Module):
-    def __init__(self, node_dim, edge_dim, hidden_dim, target_dim, batch_norm=False, dropout=0.0, propagation_depth: int = 4,
-                 mid_activation: str = 'SiLU', ** kwargs):
+    def __init__(
+            self,
+            node_dim,
+            edge_dim,
+            hidden_dim,
+            target_dim,
+            batch_norm=False,
+            dropout=0.0,
+            propagation_depth: int = 4,
+            mid_activation: str = 'SiLU',
+            ** kwargs):
         super(EGNNDistEmbedding, self).__init__()
         self.input = MLP(
             in_dim=node_dim,
@@ -24,8 +33,13 @@ class EGNNDistEmbedding(nn.Module):
         )
         self.mp_layers = nn.ModuleList()
         for _ in range(propagation_depth):
-            self.mp_layers.append(EGCLayer(node_dim, hidden_dim=hidden_dim, batch_norm=batch_norm, dropout=dropout,
-                                           mid_activation=mid_activation))
+            self.mp_layers.append(
+                EGCLayer(
+                    node_dim,
+                    hidden_dim=hidden_dim,
+                    batch_norm=batch_norm,
+                    dropout=dropout,
+                    mid_activation=mid_activation))
 
         self.node_wise_output_network = MLP(
             in_dim=hidden_dim,
@@ -38,9 +52,13 @@ class EGNNDistEmbedding(nn.Module):
             dropout=dropout,
             last_activation='None',
         )
-        self.output_network = MLP(in_dim=2*hidden_dim, hidden_size=hidden_dim, mid_activation=mid_activation,
-                                  mid_batch_norm=batch_norm, out_dim=target_dim,
-                                  layers=2)
+        self.output_network = MLP(
+            in_dim=2 * hidden_dim,
+            hidden_size=hidden_dim,
+            mid_activation=mid_activation,
+            mid_batch_norm=batch_norm,
+            out_dim=target_dim,
+            layers=2)
 
     def forward(self, graph: dgl.DGLGraph):
         graph.apply_nodes(self.input_node_func)
@@ -66,7 +84,13 @@ class EGNNDistEmbedding(nn.Module):
 
 
 class EGCLayer(nn.Module):
-    def __init__(self, node_dim, hidden_dim, batch_norm, dropout, mid_activation):
+    def __init__(
+            self,
+            node_dim,
+            hidden_dim,
+            batch_norm,
+            dropout,
+            mid_activation):
         super(EGCLayer, self).__init__()
         self.message_network = MLP(
             in_dim=hidden_dim * 2 + 6,
@@ -95,8 +119,12 @@ class EGCLayer(nn.Module):
         self.soft_edge_network = nn.Linear(hidden_dim, 1)
 
     def forward(self, graph):
-        graph.update_all(message_func=self.message_function, reduce_func=fn.sum(msg='m', out='m_sum'),
-                         apply_node_func=self.update_function)
+        graph.update_all(
+            message_func=self.message_function,
+            reduce_func=fn.sum(
+                msg='m',
+                out='m_sum'),
+            apply_node_func=self.update_function)
 
     def message_function(self, edges):
         message_input = torch.cat(

@@ -35,25 +35,27 @@ class DistanceEncoder(nn.Module):
             last_activation=activation,
         )
 
-        if readout_hidden_dim == None:
+        if readout_hidden_dim is None:
             readout_hidden_dim = hidden_dim
-        self.output = MLP(in_dim=hidden_dim * 4, hidden_size=readout_hidden_dim,
-                          mid_batch_norm=readout_batchnorm,
-                          batch_norm_momentum=batch_norm_momentum,
-                          out_dim=target_dim,
-                          layers=readout_layers)
+        self.output = MLP(
+            in_dim=hidden_dim * 4,
+            hidden_size=readout_hidden_dim,
+            mid_batch_norm=readout_batchnorm,
+            batch_norm_momentum=batch_norm_momentum,
+            out_dim=target_dim,
+            layers=readout_layers)
 
     def forward(self, distances, mask):
         if self.fourier_encodings > 0:
-            distances = fourier_encode_dist(distances, num_encodings=self.fourier_encodings)
+            distances = fourier_encode_dist(
+                distances, num_encodings=self.fourier_encodings)
         w = self.input_net(distances)
 
         mask = mask[..., None].repeat(1, 1, w.shape[-1])
 
-
         w_max, _ = torch.max(w - mask * 10e10, dim=1)
         w_min, _ = torch.min(w + mask * 10e10, dim=1)
-        w_mean = torch.sum(w * ~mask, dim=1) / (~mask*1).sum(dim=1)
+        w_mean = torch.sum(w * ~mask, dim=1) / (~mask * 1).sum(dim=1)
         w_sum = torch.sum(w * ~mask, dim=1)
 
         readout = torch.cat([w_max, w_sum, w_mean, w_min], dim=-1)

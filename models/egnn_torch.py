@@ -13,7 +13,20 @@ class E_GCL(nn.Module):
           temp: Softmax temperature.
     """
 
-    def __init__(self, input_nf, output_nf, hidden_nf, edges_in_d=0, nodes_att_dim=0, act_fn=nn.ReLU(), recurrent=True, coords_weight=1.0, attention=False, clamp=False, norm_diff=False, tanh=False):
+    def __init__(
+            self,
+            input_nf,
+            output_nf,
+            hidden_nf,
+            edges_in_d=0,
+            nodes_att_dim=0,
+            act_fn=nn.ReLU(),
+            recurrent=True,
+            coords_weight=1.0,
+            attention=False,
+            clamp=False,
+            norm_diff=False,
+            tanh=False):
         super(E_GCL, self).__init__()
         input_edge = input_nf * 2
         self.coords_weight = coords_weight
@@ -43,18 +56,16 @@ class E_GCL(nn.Module):
         coord_mlp.append(layer)
         if self.tanh:
             coord_mlp.append(nn.Tanh())
-            self.coords_range = nn.Parameter(torch.ones(1))*3
+            self.coords_range = nn.Parameter(torch.ones(1)) * 3
         self.coord_mlp = nn.Sequential(*coord_mlp)
-
 
         if self.attention:
             self.att_mlp = nn.Sequential(
                 nn.Linear(hidden_nf, 1),
                 nn.Sigmoid())
 
-        #if recurrent:
+        # if recurrent:
         #    self.gru = nn.GRUCell(hidden_nf, hidden_nf)
-
 
     def edge_model(self, source, target, radial, edge_attr):
         if edge_attr is None:  # Unused.
@@ -82,11 +93,12 @@ class E_GCL(nn.Module):
     def coord_model(self, coord, edge_index, coord_diff, edge_feat):
         row, col = edge_index
         trans = coord_diff * self.coord_mlp(edge_feat)
-        trans = torch.clamp(trans, min=-100, max=100) #This is never activated but just in case it case it explosed it may save the train
+        # This is never activated but just in case it case it explosed it may
+        # save the train
+        trans = torch.clamp(trans, min=-100, max=100)
         agg = unsorted_segment_mean(trans, row, num_segments=coord.size(0))
-        coord += agg*self.coords_weight
+        coord += agg * self.coords_weight
         return coord
-
 
     def coord2radial(self, edge_index, coord):
         row, col = edge_index
@@ -95,7 +107,7 @@ class E_GCL(nn.Module):
 
         if self.norm_diff:
             norm = torch.sqrt(radial) + 1
-            coord_diff = coord_diff/(norm)
+            coord_diff = coord_diff / (norm)
 
         return radial, coord_diff
 
@@ -110,6 +122,7 @@ class E_GCL(nn.Module):
         # x = self.node_model(x, edge_index, x[col], u, batch)  # GCN
         return h, coord, edge_attr
 
+
 class E_GCL_mask(E_GCL):
     """Graph Neural Net with global state and fixed number of nodes per graph.
     Args:
@@ -119,8 +132,28 @@ class E_GCL_mask(E_GCL):
           temp: Softmax temperature.
     """
 
-    def __init__(self, input_nf, output_nf, hidden_nf, edges_in_d=0, nodes_attr_dim=0, act_fn=nn.ReLU(), recurrent=True, coords_weight=1.0, attention=False):
-        E_GCL.__init__(self, input_nf, output_nf, hidden_nf, edges_in_d=edges_in_d, nodes_att_dim=nodes_attr_dim, act_fn=act_fn, recurrent=recurrent, coords_weight=coords_weight, attention=attention)
+    def __init__(
+            self,
+            input_nf,
+            output_nf,
+            hidden_nf,
+            edges_in_d=0,
+            nodes_attr_dim=0,
+            act_fn=nn.ReLU(),
+            recurrent=True,
+            coords_weight=1.0,
+            attention=False):
+        E_GCL.__init__(
+            self,
+            input_nf,
+            output_nf,
+            hidden_nf,
+            edges_in_d=edges_in_d,
+            nodes_att_dim=nodes_attr_dim,
+            act_fn=act_fn,
+            recurrent=recurrent,
+            coords_weight=coords_weight,
+            attention=attention)
 
         del self.coord_mlp
         self.act_fn = act_fn
@@ -129,10 +162,19 @@ class E_GCL_mask(E_GCL):
         row, col = edge_index
         trans = coord_diff * self.coord_mlp(edge_feat) * edge_mask
         agg = unsorted_segment_sum(trans, row, num_segments=coord.size(0))
-        coord += agg*self.coords_weight
+        coord += agg * self.coords_weight
         return coord
 
-    def forward(self, h, edge_index, coord, node_mask, edge_mask, edge_attr=None, node_attr=None, n_nodes=None):
+    def forward(
+            self,
+            h,
+            edge_index,
+            coord,
+            node_mask,
+            edge_mask,
+            edge_attr=None,
+            node_attr=None,
+            n_nodes=None):
         row, col = edge_index
         radial, coord_diff = self.coord2radial(edge_index, coord)
 
@@ -148,38 +190,64 @@ class E_GCL_mask(E_GCL):
         return h, coord, edge_attr
 
 
-
 class EGNNTorch(nn.Module):
-    def __init__(self, node_dim, target_dim, edge_dim, hidden_dim, act_fn=nn.SiLU(), propagation_depth=4, coords_weight=1.0, attention=False, node_attr=True, **kwargs):
+    def __init__(
+            self,
+            node_dim,
+            target_dim,
+            edge_dim,
+            hidden_dim,
+            act_fn=nn.SiLU(),
+            propagation_depth=4,
+            coords_weight=1.0,
+            attention=False,
+            node_attr=True,
+            **kwargs):
         super(EGNNTorch, self).__init__()
         self.hidden_dim = hidden_dim
         self.propagation_depth = propagation_depth
 
-        ### Encoder
+        # Encoder
         nodes_attr_dim = hidden_dim
         self.atom_encoder = AtomEncoder(emb_dim=nodes_attr_dim, padding=True)
         self.embedding = nn.Linear(nodes_attr_dim, hidden_dim)
         self.node_attr = node_attr
         for i in range(0, propagation_depth):
-            self.add_module("gcl_%d" % i, E_GCL_mask(self.hidden_dim, self.hidden_dim, self.hidden_dim, edges_in_d=edge_dim, nodes_attr_dim=nodes_attr_dim*node_attr, act_fn=act_fn, recurrent=True, coords_weight=coords_weight, attention=attention))
+            self.add_module(
+                "gcl_%d" %
+                i,
+                E_GCL_mask(
+                    self.hidden_dim,
+                    self.hidden_dim,
+                    self.hidden_dim,
+                    edges_in_d=edge_dim,
+                    nodes_attr_dim=nodes_attr_dim *
+                    node_attr,
+                    act_fn=act_fn,
+                    recurrent=True,
+                    coords_weight=coords_weight,
+                    attention=attention))
 
-        self.node_dec = nn.Sequential(nn.Linear(self.hidden_dim, self.hidden_dim),
-                                      act_fn,
-                                      nn.Linear(self.hidden_dim, self.hidden_dim))
+        self.node_dec = nn.Sequential(
+            nn.Linear(
+                self.hidden_dim, self.hidden_dim), act_fn, nn.Linear(
+                self.hidden_dim, self.hidden_dim))
 
-        self.graph_dec = nn.Sequential(nn.Linear(self.hidden_dim, self.hidden_dim),
-                                       act_fn,
-                                       nn.Linear(self.hidden_dim, target_dim))
+        self.graph_dec = nn.Sequential(
+            nn.Linear(
+                self.hidden_dim, self.hidden_dim), act_fn, nn.Linear(
+                self.hidden_dim, target_dim))
 
     def forward(self, h0, x, edges, edge_attr, node_mask, edge_mask, n_nodes):
         h0 = self.atom_encoder(h0)
         h = self.embedding(h0)
         for i in range(0, self.propagation_depth):
             if self.node_attr:
-                h, _, _ = self._modules["gcl_%d" % i](h, edges, x, node_mask, edge_mask, edge_attr=edge_attr, node_attr=h0, n_nodes=n_nodes)
+                h, _, _ = self._modules["gcl_%d" % i](
+                    h, edges, x, node_mask, edge_mask, edge_attr=edge_attr, node_attr=h0, n_nodes=n_nodes)
             else:
-                h, _, _ = self._modules["gcl_%d" % i](h, edges, x, node_mask, edge_mask, edge_attr=edge_attr,
-                                                      node_attr=None, n_nodes=n_nodes)
+                h, _, _ = self._modules["gcl_%d" % i](
+                    h, edges, x, node_mask, edge_mask, edge_attr=edge_attr, node_attr=None, n_nodes=n_nodes)
 
         h = self.node_dec(h)
         h = h * node_mask
@@ -242,7 +310,7 @@ if __name__ == "__main__":
     x_dim = 3
 
     # Dummy variables h, x and fully connected edges
-    h = torch.ones(batch_size *  n_nodes, n_feat)
+    h = torch.ones(batch_size * n_nodes, n_feat)
     x = torch.ones(batch_size * n_nodes, x_dim)
     edges, edge_attr = get_edges_batch(n_nodes, batch_size)
 

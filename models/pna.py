@@ -39,7 +39,8 @@ def aggregate_var(h, **kwargs):
 
 def aggregate_moment(h, n=3, **kwargs):
     # for each node (E[(X-E[X])^n])^{1/n}
-    # EPS is added to the absolute value of expectation before taking the nth root for stability
+    # EPS is added to the absolute value of expectation before taking the nth
+    # root for stability
     h_mean = torch.mean(h, dim=-2, keepdim=True)
     h_n = torch.mean(torch.pow(h - h_mean, n), dim=-2)
     rooted_h_n = torch.sign(h_n) * torch.pow(torch.abs(h_n) + EPS, 1.0 / n)
@@ -51,7 +52,8 @@ def aggregate_sum(h, **kwargs):
 
 
 # each scaler is a function that takes as input X (B x N x Din), adj (B x N x N) and
-# avg_d (dictionary containing averages over training set) and returns X_scaled (B x N x Din) as output
+# avg_d (dictionary containing averages over training set) and returns
+# X_scaled (B x N x Din) as output
 
 
 def scale_identity(h, D=None, avg_d=None):
@@ -59,7 +61,8 @@ def scale_identity(h, D=None, avg_d=None):
 
 
 def scale_amplification(h, D, avg_d):
-    # log(D + 1) / d * h     where d is the average of the ``log(D + 1)`` in the training set
+    # log(D + 1) / d * h     where d is the average of the ``log(D + 1)`` in
+    # the training set
     return h * (np.log(D + 1) / avg_d["log"])
 
 
@@ -114,46 +117,85 @@ class PNA(nn.Module):
                  batch_norm_momentum=0.1,
                  **kwargs):
         super(PNA, self).__init__()
-        self.node_gnn = PNAGNN(hidden_dim=hidden_dim, aggregators=aggregators,
-                               scalers=scalers, residual=residual, pairwise_distances=pairwise_distances,
-                               activation=activation, last_activation=last_activation, mid_batch_norm=mid_batch_norm,
-                               last_batch_norm=last_batch_norm, propagation_depth=propagation_depth, dropout=dropout,
-                               posttrans_layers=posttrans_layers, pretrans_layers=pretrans_layers,
-                               batch_norm_momentum=batch_norm_momentum
-                               )
-        if readout_hidden_dim == None:
+        self.node_gnn = PNAGNN(
+            hidden_dim=hidden_dim,
+            aggregators=aggregators,
+            scalers=scalers,
+            residual=residual,
+            pairwise_distances=pairwise_distances,
+            activation=activation,
+            last_activation=last_activation,
+            mid_batch_norm=mid_batch_norm,
+            last_batch_norm=last_batch_norm,
+            propagation_depth=propagation_depth,
+            dropout=dropout,
+            posttrans_layers=posttrans_layers,
+            pretrans_layers=pretrans_layers,
+            batch_norm_momentum=batch_norm_momentum)
+        if readout_hidden_dim is None:
             readout_hidden_dim = hidden_dim
         self.readout_aggregators = readout_aggregators
-        self.output = MLP(in_dim=hidden_dim * len(self.readout_aggregators), hidden_size=readout_hidden_dim,
-                          mid_batch_norm=readout_batchnorm, out_dim=target_dim,
-                          layers=readout_layers, batch_norm_momentum=batch_norm_momentum)
+        self.output = MLP(in_dim=hidden_dim * len(self.readout_aggregators),
+                          hidden_size=readout_hidden_dim,
+                          mid_batch_norm=readout_batchnorm,
+                          out_dim=target_dim,
+                          layers=readout_layers,
+                          batch_norm_momentum=batch_norm_momentum)
 
     def forward(self, graph: dgl.DGLGraph):
         self.node_gnn(graph)
-        readouts_to_cat = [dgl.readout_nodes(graph, 'feat', op=aggr) for aggr in self.readout_aggregators]
+        readouts_to_cat = [
+            dgl.readout_nodes(
+                graph,
+                'feat',
+                op=aggr) for aggr in self.readout_aggregators]
         readout = torch.cat(readouts_to_cat, dim=-1)
         return self.output(readout)
 
 
 class PNAGNN(nn.Module):
-    def __init__(self, hidden_dim, aggregators: List[str], scalers: List[str],
-                 residual: bool = True, pairwise_distances: bool = False, activation: Union[Callable, str] = "relu",
-                 last_activation: Union[Callable, str] = "none", mid_batch_norm: bool = False,
-                 last_batch_norm: bool = False, batch_norm_momentum=0.1, propagation_depth: int = 5,
-                 dropout: float = 0.0, posttrans_layers: int = 1, pretrans_layers: int = 1, **kwargs):
+    def __init__(self,
+                 hidden_dim,
+                 aggregators: List[str],
+                 scalers: List[str],
+                 residual: bool = True,
+                 pairwise_distances: bool = False,
+                 activation: Union[Callable,
+                                   str] = "relu",
+                 last_activation: Union[Callable,
+                                        str] = "none",
+                 mid_batch_norm: bool = False,
+                 last_batch_norm: bool = False,
+                 batch_norm_momentum=0.1,
+                 propagation_depth: int = 5,
+                 dropout: float = 0.0,
+                 posttrans_layers: int = 1,
+                 pretrans_layers: int = 1,
+                 **kwargs):
         super(PNAGNN, self).__init__()
 
         self.mp_layers = nn.ModuleList()
 
         for _ in range(propagation_depth):
             self.mp_layers.append(
-                PNALayer(in_dim=hidden_dim, out_dim=int(hidden_dim), in_dim_edges=hidden_dim, aggregators=aggregators,
-                         scalers=scalers, pairwise_distances=pairwise_distances, residual=residual, dropout=dropout,
-                         activation=activation, last_activation=last_activation, mid_batch_norm=mid_batch_norm,
-                         last_batch_norm=last_batch_norm, avg_d={"log": 1.0}, posttrans_layers=posttrans_layers,
-                         pretrans_layers=pretrans_layers, batch_norm_momentum=batch_norm_momentum
-                         ),
-
+                PNALayer(
+                    in_dim=hidden_dim,
+                    out_dim=int(hidden_dim),
+                    in_dim_edges=hidden_dim,
+                    aggregators=aggregators,
+                    scalers=scalers,
+                    pairwise_distances=pairwise_distances,
+                    residual=residual,
+                    dropout=dropout,
+                    activation=activation,
+                    last_activation=last_activation,
+                    mid_batch_norm=mid_batch_norm,
+                    last_batch_norm=last_batch_norm,
+                    avg_d={
+                        "log": 1.0},
+                    posttrans_layers=posttrans_layers,
+                    pretrans_layers=pretrans_layers,
+                    batch_norm_momentum=batch_norm_momentum),
             )
         self.atom_encoder = AtomEncoder(emb_dim=hidden_dim)
         self.bond_encoder = BondEncoder(emb_dim=hidden_dim)
@@ -167,11 +209,27 @@ class PNAGNN(nn.Module):
 
 
 class PNALayer(nn.Module):
-    def __init__(self, in_dim: int, out_dim: int, in_dim_edges: int, aggregators: List[str], scalers: List[str],
-                 activation: Union[Callable, str] = "relu", last_activation: Union[Callable, str] = "none",
-                 dropout: float = 0.0, residual: bool = True, pairwise_distances: bool = False,
-                 mid_batch_norm: bool = False, last_batch_norm: bool = False, batch_norm_momentum=0.1,
-                 avg_d: Dict[str, float] = {"log": 1.0}, posttrans_layers: int = 2, pretrans_layers: int = 1, ):
+    def __init__(self,
+                 in_dim: int,
+                 out_dim: int,
+                 in_dim_edges: int,
+                 aggregators: List[str],
+                 scalers: List[str],
+                 activation: Union[Callable,
+                                   str] = "relu",
+                 last_activation: Union[Callable,
+                                        str] = "none",
+                 dropout: float = 0.0,
+                 residual: bool = True,
+                 pairwise_distances: bool = False,
+                 mid_batch_norm: bool = False,
+                 last_batch_norm: bool = False,
+                 batch_norm_momentum=0.1,
+                 avg_d: Dict[str,
+                             float] = {"log": 1.0},
+                 posttrans_layers: int = 2,
+                 pretrans_layers: int = 1,
+                 ):
         super(PNALayer, self).__init__()
         self.aggregators = [PNA_AGGREGATORS[aggr] for aggr in aggregators]
         self.scalers = [PNA_SCALERS[scale] for scale in scalers]
@@ -184,17 +242,33 @@ class PNALayer(nn.Module):
             self.residual = False
 
         self.pretrans = MLP(
-            in_dim=(2 * in_dim + in_dim_edges + 1) if self.pairwise_distances else (2 * in_dim + in_dim_edges),
-            hidden_size=in_dim, out_dim=in_dim, mid_batch_norm=mid_batch_norm, last_batch_norm=last_batch_norm,
-            layers=pretrans_layers, mid_activation=activation, dropout=dropout, last_activation=last_activation,
-            batch_norm_momentum=batch_norm_momentum
-
-        )
-        self.posttrans = MLP(in_dim=(len(self.aggregators) * len(self.scalers) + 1) * in_dim, hidden_size=out_dim,
-                             out_dim=out_dim, layers=posttrans_layers, mid_activation=activation,
-                             last_activation=last_activation, dropout=dropout, mid_batch_norm=mid_batch_norm,
-                             last_batch_norm=last_batch_norm, batch_norm_momentum=batch_norm_momentum
-                             )
+            in_dim=(
+                2 *
+                in_dim +
+                in_dim_edges +
+                1) if self.pairwise_distances else (
+                2 *
+                in_dim +
+                in_dim_edges),
+            hidden_size=in_dim,
+            out_dim=in_dim,
+            mid_batch_norm=mid_batch_norm,
+            last_batch_norm=last_batch_norm,
+            layers=pretrans_layers,
+            mid_activation=activation,
+            dropout=dropout,
+            last_activation=last_activation,
+            batch_norm_momentum=batch_norm_momentum)
+        self.posttrans = MLP(in_dim=(len(self.aggregators) * len(self.scalers) + 1) * in_dim,
+                             hidden_size=out_dim,
+                             out_dim=out_dim,
+                             layers=posttrans_layers,
+                             mid_activation=activation,
+                             last_activation=last_activation,
+                             dropout=dropout,
+                             mid_batch_norm=mid_batch_norm,
+                             last_batch_norm=last_batch_norm,
+                             batch_norm_momentum=batch_norm_momentum)
 
     def forward(self, g):
         h = g.ndata['feat']
@@ -230,7 +304,8 @@ class PNALayer(nn.Module):
         h = torch.cat(h_to_cat, dim=-1)
 
         if len(self.scalers) > 1:
-            h = torch.cat([scale(h, D=D, avg_d=self.avg_d) for scale in self.scalers], dim=-1)
+            h = torch.cat([scale(h, D=D, avg_d=self.avg_d)
+                          for scale in self.scalers], dim=-1)
 
         return {'feat': h}
 
@@ -240,13 +315,18 @@ class PNALayer(nn.Module):
         the source node, the destination node, and the edge between them (if applicable).
         """
         if self.edge_features and self.pairwise_distances:
-            squared_distance = torch.sum((edges.src['x'] - edges.dst['x']) ** 2, dim=-1)[:, None]
-            z2 = torch.cat([edges.src['feat'], edges.dst['feat'], edges.data['feat'], squared_distance], dim=-1)
+            squared_distance = torch.sum(
+                (edges.src['x'] - edges.dst['x']) ** 2, dim=-1)[:, None]
+            z2 = torch.cat([edges.src['feat'], edges.dst['feat'],
+                           edges.data['feat'], squared_distance], dim=-1)
         elif not self.edge_features and self.pairwise_distances:
-            squared_distance = torch.sum((edges.src['x'] - edges.dst['x']) ** 2, dim=-1)[:, None]
-            z2 = torch.cat([edges.src['feat'], edges.dst['feat'], squared_distance], dim=-1)
+            squared_distance = torch.sum(
+                (edges.src['x'] - edges.dst['x']) ** 2, dim=-1)[:, None]
+            z2 = torch.cat(
+                [edges.src['feat'], edges.dst['feat'], squared_distance], dim=-1)
         elif self.edge_features and not self.pairwise_distances:
-            z2 = torch.cat([edges.src['feat'], edges.dst['feat'], edges.data['feat']], dim=-1)
+            z2 = torch.cat(
+                [edges.src['feat'], edges.dst['feat'], edges.data['feat']], dim=-1)
         else:
             z2 = torch.cat([edges.src['feat'], edges.dst['feat']], dim=-1)
         return {"e": self.pretrans(z2)}

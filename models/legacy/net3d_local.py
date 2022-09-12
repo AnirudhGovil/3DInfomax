@@ -51,11 +51,17 @@ class Net3DLocal(nn.Module):
         self.mp_layers = nn.ModuleList()
         for _ in range(propagation_depth):
             self.mp_layers.append(
-                Net3DLayer(node_dim, edge_dim=hidden_dim, hidden_dim=hidden_dim, batch_norm=batch_norm,
-                           batch_norm_momentum=batch_norm_momentum,
-                           dropout=dropout,
-                           mid_activation=activation, reduce_func=reduce_func, message_net_layers=message_net_layers,
-                           update_net_layers=update_net_layers))
+                Net3DLayer(
+                    node_dim,
+                    edge_dim=hidden_dim,
+                    hidden_dim=hidden_dim,
+                    batch_norm=batch_norm,
+                    batch_norm_momentum=batch_norm_momentum,
+                    dropout=dropout,
+                    mid_activation=activation,
+                    reduce_func=reduce_func,
+                    message_net_layers=message_net_layers,
+                    update_net_layers=update_net_layers))
 
         self.node_wise_output_layers = node_wise_output_layers
         if self.node_wise_output_layers > 0:
@@ -72,12 +78,11 @@ class Net3DLocal(nn.Module):
                 last_activation='None',
             )
 
-
-
     def forward(self, graph: dgl.DGLGraph):
         graph.apply_nodes(self.input_node_func)
         if self.fourier_encodings > 0:
-            graph.edata['d'] = fourier_encode_dist(graph.edata['d'], num_encodings=self.fourier_encodings)
+            graph.edata['d'] = fourier_encode_dist(
+                graph.edata['d'], num_encodings=self.fourier_encodings)
         graph.apply_edges(self.input_edge_func)
 
         for mp_layer in self.mp_layers:
@@ -98,8 +103,18 @@ class Net3DLocal(nn.Module):
 
 
 class Net3DLayer(nn.Module):
-    def __init__(self, node_dim, edge_dim, reduce_func, hidden_dim, batch_norm, batch_norm_momentum, dropout,
-                 mid_activation, message_net_layers, update_net_layers):
+    def __init__(
+            self,
+            node_dim,
+            edge_dim,
+            reduce_func,
+            hidden_dim,
+            batch_norm,
+            batch_norm_momentum,
+            dropout,
+            mid_activation,
+            message_net_layers,
+            update_net_layers):
         super(Net3DLayer, self).__init__()
         self.message_network = MLP(
             in_dim=hidden_dim * 2 + edge_dim,
@@ -136,8 +151,12 @@ class Net3DLayer(nn.Module):
         self.soft_edge_network = nn.Linear(hidden_dim, 1)
 
     def forward(self, graph):
-        graph.update_all(message_func=self.message_function, reduce_func=self.reduce_func(msg='m', out='m_sum'),
-                         apply_node_func=self.update_function)
+        graph.update_all(
+            message_func=self.message_function,
+            reduce_func=self.reduce_func(
+                msg='m',
+                out='m_sum'),
+            apply_node_func=self.update_function)
 
     def message_function(self, edges):
         message_input = torch.cat(

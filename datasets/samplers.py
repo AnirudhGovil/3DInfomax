@@ -10,18 +10,26 @@ from datasets.qm9_dataset import QM9Dataset
 
 
 class ConstantNumberAtomsCategorical(Sampler[List[int]]):
-    """r"""Wraps another sampler to yield a mini-batch of indices.
+    """Wraps another sampler to yield a mini - batch of indices.
 
-    :param sampler: Base sampler. Can be any iterable object
-    :type sampler: Sampler or Iterable
-    :param batch_size: Size of mini-batch.
-    :type batch_size: int
-    :param drop_last: If ``True``, the sampler will drop the last batch if
-            its size would be less than ``batch_size``
-    :type drop_last: bool
+    : param sampler: Base sampler. Can be any iterable object
+    : type sampler: Sampler or Iterable
+    : param batch_size: Size of mini - batch.
+    : type batch_size: int
+    : param drop_last: If ``True``, the sampler will drop the last batch if
+    its size would be less than ``batch_size``
+    : type drop_last: bool
+    r"""
 
-    def __init__(self, data_source: QM9Dataset, batch_size: int, indices: List, replacement: bool = False,
-                 num_samples: Optional[int] = None, generator=None, drop_last=False) -> None:
+    def __init__(
+            self,
+            data_source: QM9Dataset,
+            batch_size: int,
+            indices: List,
+            replacement: bool = False,
+            num_samples: Optional[int] = None,
+            generator=None,
+            drop_last=False) -> None:
         super(Sampler, self).__init__()
         n_atoms = data_source.meta_dict['n_atoms'][indices]
         self.data_source = Subset(data_source, indices)
@@ -29,10 +37,13 @@ class ConstantNumberAtomsCategorical(Sampler[List[int]]):
         for i, n_atom in tqdm(enumerate(n_atoms)):
             self.clusters[n_atom.item()].append(i)
         print(self.clusters)
-        self.categorical = Categorical(
-            probs=torch.tensor([len(v) for v in self.clusters.values()]) / len(self.data_source))
-        self.sampler = RandomSampler(data_source=self.data_source, replacement=replacement, num_samples=num_samples,
-                                     generator=generator)
+        self.categorical = Categorical(probs=torch.tensor(
+            [len(v) for v in self.clusters.values()]) / len(self.data_source))
+        self.sampler = RandomSampler(
+            data_source=self.data_source,
+            replacement=replacement,
+            num_samples=num_samples,
+            generator=generator)
         self.batch_size = batch_size
         self.drop_last = drop_last
 
@@ -60,31 +71,40 @@ class ConstantNumberAtomsCategorical(Sampler[List[int]]):
         # Can only be called if self.sampler has __len__ implemented
         # We cannot enforce this condition, so we turn off typechecking for the
         # implementation below.
-        # Somewhat related: see NOTE [ Lack of Default `__len__` in Python Abstract Base Classes ]
+        # Somewhat related: see NOTE [ Lack of Default `__len__` in Python
+        # Abstract Base Classes ]
 
-        return (len(self.data_source) + self.batch_size - 1) // self.batch_size  # type: ignore
+        return (len(self.data_source) + self.batch_size -
+                1) // self.batch_size  # type: ignore
 
 
 class ConstantNumberAtomsChunks(Sampler[List[int]]):
-    """r"""Wraps another sampler to yield a mini-batch of indices.
+    """Wraps another sampler to yield a mini - batch of indices.
 
-    :param sampler: Base sampler. Can be any iterable object
-    :type sampler: Sampler or Iterable
-    :param batch_size: Size of mini-batch.
-    :type batch_size: int
-    :param drop_last: If ``True``, the sampler will drop the last batch if
-            its size would be less than ``batch_size``
-    :type drop_last: bool
+    : param sampler: Base sampler. Can be any iterable object
+    : type sampler: Sampler or Iterable
+    : param batch_size: Size of mini - batch.
+    : type batch_size: int
+    : param drop_last: If ``True``, the sampler will drop the last batch if
+    its size would be less than ``batch_size``
+    : type drop_last: bool
+    r"""
 
-    def __init__(self, data_source: QM9Dataset, batch_size: int, indices: List, drop_last=False,
-                 number_chunks=50) -> None:
+    def __init__(
+            self,
+            data_source: QM9Dataset,
+            batch_size: int,
+            indices: List,
+            drop_last=False,
+            number_chunks=50) -> None:
         super(Sampler, self).__init__()
         self.number_chunks = number_chunks
         n_atoms = data_source.meta_dict['n_atoms'][indices]
         self.data_source = Subset(data_source, indices)
         n_atoms_sorted, self.indices_sorted_by_n_atoms = torch.sort(n_atoms)
 
-        # get indices between which the molecules with the sambe number of atoms lie
+        # get indices between which the molecules with the sambe number of
+        # atoms lie
         self.n_atoms_separators = [0]
         max = n_atoms_sorted[0].item()
         for i, n_atoms in enumerate(n_atoms_sorted):
@@ -122,12 +142,14 @@ class ConstantNumberAtomsChunks(Sampler[List[int]]):
         """ """
         shuffled_among_same_n_atoms = []
         for i, _ in enumerate(self.n_atoms_separators[:-1]):
-            same_n_atoms = self.indices_sorted_by_n_atoms[self.n_atoms_separators[i]:self.n_atoms_separators[i + 1]]
+            same_n_atoms = self.indices_sorted_by_n_atoms[self.n_atoms_separators[i]
+                :self.n_atoms_separators[i + 1]]
             perm = torch.randperm(len(same_n_atoms))
             shuffled_among_same_n_atoms.append(same_n_atoms[perm])
         shuffled_among_same_n_atoms = torch.cat(shuffled_among_same_n_atoms)
         clusters = torch.chunk(shuffled_among_same_n_atoms, self.number_chunks)
-        cluster_choices = torch.stack(clusters)[torch.randperm(len(clusters)).tolist()]
+        cluster_choices = torch.stack(
+            clusters)[torch.randperm(len(clusters)).tolist()]
 
         return cluster_choices.tolist()
 
@@ -135,6 +157,8 @@ class ConstantNumberAtomsChunks(Sampler[List[int]]):
         # Can only be called if self.sampler has __len__ implemented
         # We cannot enforce this condition, so we turn off typechecking for the
         # implementation below.
-        # Somewhat related: see NOTE [ Lack of Default `__len__` in Python Abstract Base Classes ]
+        # Somewhat related: see NOTE [ Lack of Default `__len__` in Python
+        # Abstract Base Classes ]
 
-        return (len(self.data_source) + self.batch_size - 1) // self.batch_size  # type: ignore
+        return (len(self.data_source) + self.batch_size -
+                1) // self.batch_size  # type: ignore

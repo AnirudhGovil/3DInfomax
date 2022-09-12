@@ -42,34 +42,41 @@ class PNAEGNN(nn.Module):
                  batch_norm_momentum=0.1,
                  **kwargs):
         super(PNAEGNN, self).__init__()
-        self.node_gnn = PNAEGNNNet(node_dim=node_dim,
-                                   edge_dim=edge_dim,
-                                   hidden_dim=hidden_dim,
-                                   aggregators=aggregators,
-                                   scalers=scalers,
-                                   residual=residual,
-                                   pairwise_distances=pairwise_distances,
-                                   activation=activation,
-                                   last_activation=last_activation,
-                                   mid_batch_norm=mid_batch_norm,
-                                   last_batch_norm=last_batch_norm,
-                                   propagation_depth=propagation_depth,
-                                   dropout=dropout,
-                                   posttrans_layers=posttrans_layers,
-                                   pretrans_layers=pretrans_layers,
-                                   pretrans_complete_layers=pretrans_complete_layers,
-                                   batch_norm_momentum=batch_norm_momentum
-                                   )
-        if readout_hidden_dim == None:
+        self.node_gnn = PNAEGNNNet(
+            node_dim=node_dim,
+            edge_dim=edge_dim,
+            hidden_dim=hidden_dim,
+            aggregators=aggregators,
+            scalers=scalers,
+            residual=residual,
+            pairwise_distances=pairwise_distances,
+            activation=activation,
+            last_activation=last_activation,
+            mid_batch_norm=mid_batch_norm,
+            last_batch_norm=last_batch_norm,
+            propagation_depth=propagation_depth,
+            dropout=dropout,
+            posttrans_layers=posttrans_layers,
+            pretrans_layers=pretrans_layers,
+            pretrans_complete_layers=pretrans_complete_layers,
+            batch_norm_momentum=batch_norm_momentum)
+        if readout_hidden_dim is None:
             readout_hidden_dim = hidden_dim
         self.readout_aggregators = readout_aggregators
-        self.output = MLP(in_dim=hidden_dim * len(self.readout_aggregators), hidden_size=readout_hidden_dim,
-                          mid_batch_norm=readout_batchnorm, out_dim=target_dim,
-                          layers=readout_layers, batch_norm_momentum=batch_norm_momentum)
+        self.output = MLP(in_dim=hidden_dim * len(self.readout_aggregators),
+                          hidden_size=readout_hidden_dim,
+                          mid_batch_norm=readout_batchnorm,
+                          out_dim=target_dim,
+                          layers=readout_layers,
+                          batch_norm_momentum=batch_norm_momentum)
 
     def forward(self, graph: dgl.DGLHeteroGraph):
         self.node_gnn(graph)
-        readouts_to_cat = [dgl.readout_nodes(graph, 'feat', op=aggr) for aggr in self.readout_aggregators]
+        readouts_to_cat = [
+            dgl.readout_nodes(
+                graph,
+                'feat',
+                op=aggr) for aggr in self.readout_aggregators]
         readout = torch.cat(readouts_to_cat, dim=-1)
         return self.output(readout)
 
@@ -123,26 +130,27 @@ class PNAEGNNNet(nn.Module):
             )
         self.mp_layers = nn.ModuleList()
         for _ in range(propagation_depth):
-            self.mp_layers.append(PNAEGNNLayer(in_dim=hidden_dim,
-                                               out_dim=int(hidden_dim),
-                                               in_dim_edges=hidden_dim,
-                                               aggregators=aggregators,
-                                               scalers=scalers,
-                                               pairwise_distances=pairwise_distances,
-                                               residual=residual,
-                                               dropout=dropout,
-                                               activation=activation,
-                                               last_activation=last_activation,
-                                               mid_batch_norm=mid_batch_norm,
-                                               last_batch_norm=last_batch_norm,
-                                               avg_d={"log": 1.0},
-                                               posttrans_layers=posttrans_layers,
-                                               pretrans_layers=pretrans_layers,
-                                               pretrans_complete_layers=pretrans_complete_layers,
-                                               batch_norm_momentum=batch_norm_momentum
-                                               ),
-
-                                  )
+            self.mp_layers.append(
+                PNAEGNNLayer(
+                    in_dim=hidden_dim,
+                    out_dim=int(hidden_dim),
+                    in_dim_edges=hidden_dim,
+                    aggregators=aggregators,
+                    scalers=scalers,
+                    pairwise_distances=pairwise_distances,
+                    residual=residual,
+                    dropout=dropout,
+                    activation=activation,
+                    last_activation=last_activation,
+                    mid_batch_norm=mid_batch_norm,
+                    last_batch_norm=last_batch_norm,
+                    avg_d={
+                        "log": 1.0},
+                    posttrans_layers=posttrans_layers,
+                    pretrans_layers=pretrans_layers,
+                    pretrans_complete_layers=pretrans_complete_layers,
+                    batch_norm_momentum=batch_norm_momentum),
+            )
         self.node_wise_output_network = MLP(
             in_dim=hidden_dim,
             hidden_size=hidden_dim,
@@ -253,7 +261,10 @@ class PNAEGNNLayer(nn.Module):
 
         # aggregation
         g.update_all(self.message_func, self.reduce_func, etype='bond')
-        g.update_all(self.message_func_complete, self.reduce_func_complete, etype='complete')
+        g.update_all(
+            self.message_func_complete,
+            self.reduce_func_complete,
+            etype='complete')
 
         h = torch.cat([h, g.ndata['f_bond'], g.ndata['f_complete']], dim=-1)
         # post-transformation
@@ -287,7 +298,8 @@ class PNAEGNNLayer(nn.Module):
         h = torch.cat(h_to_cat, dim=-1)
 
         if len(self.scalers) > 1:
-            h = torch.cat([scale(h, D=D, avg_d=self.avg_d) for scale in self.scalers], dim=-1)
+            h = torch.cat([scale(h, D=D, avg_d=self.avg_d)
+                          for scale in self.scalers], dim=-1)
 
         return {'f_bond': h}
 
@@ -303,7 +315,8 @@ class PNAEGNNLayer(nn.Module):
         h = torch.cat(h_to_cat, dim=-1)
 
         if len(self.scalers) > 1:
-            h = torch.cat([scale(h, D=D, avg_d=self.avg_d) for scale in self.scalers], dim=-1)
+            h = torch.cat([scale(h, D=D, avg_d=self.avg_d)
+                          for scale in self.scalers], dim=-1)
 
         return {'f_complete': h}
 
@@ -312,11 +325,13 @@ class PNAEGNNLayer(nn.Module):
         Return a mapping to the concatenation of the features from
         the source node, the destination node, and the edge between them (if applicable).
         """
-        z2 = torch.cat([edges.src['feat'], edges.dst['feat'], edges.data['feat']], dim=-1)
+        z2 = torch.cat([edges.src['feat'], edges.dst['feat'],
+                       edges.data['feat']], dim=-1)
         return {"e": self.pretrans(z2)}
 
     def pretrans_complete_edges(self, edges):
-        message_input = torch.cat([edges.src['feat'], edges.dst['feat']], dim=-1)
+        message_input = torch.cat(
+            [edges.src['feat'], edges.dst['feat']], dim=-1)
         message = self.pretrans_complete(message_input)
         edge_weight = torch.sigmoid(self.soft_edge_network(message))
         return {'e_complete': message * edge_weight}

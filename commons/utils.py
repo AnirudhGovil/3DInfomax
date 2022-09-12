@@ -15,7 +15,7 @@ from torch.utils.tensorboard import SummaryWriter
 def seed_all(seed):
     """The random seed is set to 123 by default
 
-    :param seed: 
+    :param seed:
 
     """
     if not seed:
@@ -36,7 +36,7 @@ def seed_all(seed):
 def get_random_indices(length, seed=123):
     """Using the seed we sampe the indices to get a distribution
 
-    :param length: 
+    :param length:
     :param seed:  (Default value = 123)
 
     """
@@ -46,13 +46,16 @@ def get_random_indices(length, seed=123):
     np.random.set_state(st0)
     return random_indices
 
+
 edges_dic = {}
+
+
 def get_adj_matrix(n_nodes, batch_size, device):
     """Returns the adjacency matrix of the graph
 
-    :param n_nodes: 
-    :param batch_size: 
-    :param device: 
+    :param n_nodes:
+    :param batch_size:
+    :param device:
 
     """
     if n_nodes in edges_dic:
@@ -65,24 +68,28 @@ def get_adj_matrix(n_nodes, batch_size, device):
             for batch_idx in range(batch_size):
                 for i in range(n_nodes):
                     for j in range(n_nodes):
-                        rows.append(i + batch_idx*n_nodes)
-                        cols.append(j + batch_idx*n_nodes)
+                        rows.append(i + batch_idx * n_nodes)
+                        cols.append(j + batch_idx * n_nodes)
 
     else:
         edges_dic[n_nodes] = {}
         return get_adj_matrix(n_nodes, batch_size, device)
 
-    edges = [torch.LongTensor(rows).to(device), torch.LongTensor(cols).to(device)]
+    edges = [
+        torch.LongTensor(rows).to(device),
+        torch.LongTensor(cols).to(device)]
     return edges
 
-def flatten_dict(params: Dict[Any, Any], delimiter: str = '/') -> Dict[str, Any]:
+
+def flatten_dict(params: Dict[Any, Any],
+                 delimiter: str = '/') -> Dict[str, Any]:
     """Flatten hierarchical dict, e.g. ``{'a': {'b': 'c'}} -> {'a/b': 'c'}``.
-    
+
     Args:
 
     :param delimiter: Delimiter to express the hierarchy
-    :param params: Dict[Any: 
-    :param Any]: 
+    :param params: Dict[Any:
+    :param Any]:
     :param delimiter: str:  (Default value = '/')
     :returns: Flattened dict.
     Examples:
@@ -98,7 +105,7 @@ def flatten_dict(params: Dict[Any, Any], delimiter: str = '/') -> Dict[str, Any]
     def _dict_generator(input_dict, prefixes=None):
         """
 
-        :param input_dict: 
+        :param input_dict:
         :param prefixes:  (Default value = None)
 
         """
@@ -107,7 +114,8 @@ def flatten_dict(params: Dict[Any, Any], delimiter: str = '/') -> Dict[str, Any]
             for key, value in input_dict.items():
                 key = str(key)
                 if isinstance(value, (MutableMapping, Namespace)):
-                    value = vars(value) if isinstance(value, Namespace) else value
+                    value = vars(value) if isinstance(
+                        value, Namespace) else value
                     for d in _dict_generator(value, prefixes + [key]):
                         yield d
                 else:
@@ -115,7 +123,9 @@ def flatten_dict(params: Dict[Any, Any], delimiter: str = '/') -> Dict[str, Any]
         else:
             yield prefixes + [input_dict if input_dict is None else str(input_dict)]
 
-    dictionary = {delimiter.join(keys): val for *keys, val in _dict_generator(params)}
+    dictionary = {
+        delimiter.join(keys): val for *keys,
+        val in _dict_generator(params)}
     for k in dictionary.keys():
         # convert relevant np scalars to python types first (instead of str)
         if isinstance(dictionary[k], (np.bool_, np.integer, np.floating)):
@@ -129,7 +139,7 @@ def fourier_encode_dist(x, num_encodings=4, include_self=True):
     """Using the Forrier Series to to encode the distance between atoms by mapping them to
     higher dimensional space using high frequency cosines
 
-    :param x: 
+    :param x:
     :param num_encodings:  (Default value = 4)
     :param include_self:  (Default value = True)
 
@@ -143,32 +153,49 @@ def fourier_encode_dist(x, num_encodings=4, include_self=True):
     return x.squeeze()
 
 
-def tensorboard_singular_value_plot(predictions, targets, writer: SummaryWriter, step, data_split):
+def tensorboard_singular_value_plot(
+        predictions,
+        targets,
+        writer: SummaryWriter,
+        step,
+        data_split):
     """Helper function for displaying data on the tensorboard
 
-    :param predictions: 
-    :param targets: 
-    :param writer: SummaryWriter: 
-    :param step: 
-    :param data_split: 
+    :param predictions:
+    :param targets:
+    :param writer: SummaryWriter:
+    :param step:
+    :param data_split:
 
     """
-    u, s, v = torch.pca_lowrank(predictions.detach().cpu(), q=min(predictions.shape))
+    u, s, v = torch.pca_lowrank(
+        predictions.detach().cpu(), q=min(
+            predictions.shape))
     fig, ax = plt.subplots()
     s = 100 * s / s.sum()
     ax.plot(s.numpy())
-    writer.add_figure(f'singular_values/{data_split}', figure=fig, global_step=step)
+    writer.add_figure(
+        f'singular_values/{data_split}',
+        figure=fig,
+        global_step=step)
     fig, ax = plt.subplots()
     ax.plot(np.cumsum(s.numpy()))
-    writer.add_figure(f'singular_values_cumsum/{data_split}', figure=fig, global_step=step)
+    writer.add_figure(
+        f'singular_values_cumsum/{data_split}',
+        figure=fig,
+        global_step=step)
 
 
-def tensorboard_gradient_magnitude(optimizer: torch.optim.Optimizer, writer: SummaryWriter, step, param_groups=[0]):
+def tensorboard_gradient_magnitude(
+        optimizer: torch.optim.Optimizer,
+        writer: SummaryWriter,
+        step,
+        param_groups=[0]):
     """Function for the tensorboard to calculate the magnitude of the gradient
 
-    :param optimizer: torch.optim.Optimizer: 
-    :param writer: SummaryWriter: 
-    :param step: 
+    :param optimizer: torch.optim.Optimizer:
+    :param writer: SummaryWriter:
+    :param step:
     :param param_groups:  (Default value = [0])
 
     """
@@ -176,15 +203,18 @@ def tensorboard_gradient_magnitude(optimizer: torch.optim.Optimizer, writer: Sum
         if i in param_groups:
             all_params = []
             for params in param_group['params']:
-                if params.grad != None:
+                if params.grad is not None:
                     all_params.append(params.grad.view(-1))
-            writer.add_scalar(f'gradient_magnitude_param_group_{i}', torch.cat(all_params).abs().mean(),
-                              global_step=step)
+            writer.add_scalar(
+                f'gradient_magnitude_param_group_{i}',
+                torch.cat(all_params).abs().mean(),
+                global_step=step)
 
 
 TENSORBOARD_FUNCTIONS = {
     'singular_values': tensorboard_singular_value_plot
 }
+
 
 def move_to_device(element, device):
     """takes arbitrarily nested list and moves everything in it to device if it is a dgl graph or a torch tensor
@@ -196,5 +226,5 @@ def move_to_device(element, device):
     if isinstance(element, list):
         return [move_to_device(x, device) for x in element]
     else:
-        return element.to(device) if isinstance(element,(torch.Tensor, dgl.DGLGraph)) else element
-
+        return element.to(device) if isinstance(
+            element, (torch.Tensor, dgl.DGLGraph)) else element

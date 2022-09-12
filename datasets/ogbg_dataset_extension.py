@@ -11,13 +11,26 @@ from torch.utils.data import Subset
 
 class OGBGDatasetExtension(GraphPropPredDataset):
     """ """
-    def __init__(self, return_types, name, device, root='dataset', meta_dict=None, num_freq=10):
-        super(OGBGDatasetExtension, self).__init__(name=name, root=root, meta_dict=meta_dict)
+
+    def __init__(
+            self,
+            return_types,
+            name,
+            device,
+            root='dataset',
+            meta_dict=None,
+            num_freq=10):
+        super(
+            OGBGDatasetExtension,
+            self).__init__(
+            name=name,
+            root=root,
+            meta_dict=meta_dict)
         '''
             - name (str): name of the dataset
             - root (str): root directory to store the dataset folder
 
-            - meta_dict: dictionary that stores all the meta-information about data. Default is None, 
+            - meta_dict: dictionary that stores all the meta-information about data. Default is None,
                     but when something is passed, it uses its information. Useful for debugging for external contributers.
         '''
         self.return_types = return_types
@@ -39,8 +52,8 @@ class OGBGDatasetExtension(GraphPropPredDataset):
     def data_by_type(self, idx, return_type):
         """
 
-        :param idx: 
-        :param return_type: 
+        :param idx:
+        :param return_type:
 
         """
         if return_type == 'dgl_graph':
@@ -51,10 +64,17 @@ class OGBGDatasetExtension(GraphPropPredDataset):
             return self.labels[idx].to(self.device)
         elif return_type == 'pytorch_geometric_graph':
             graph_info = self.graphs[idx]
-            return torch_geometric.data.Data(z=torch.from_numpy(graph_info['node_feat']).to(self.device),
-                                             edge_attr=torch.from_numpy(graph_info['edge_feat']).to(self.device),
-                                             edge_index=torch.from_numpy(graph_info['edge_index']).to(self.device),
-                                             num_nodes=graph_info['num_nodes'])
+            return torch_geometric.data.Data(
+                z=torch.from_numpy(
+                    graph_info['node_feat']).to(
+                    self.device),
+                edge_attr=torch.from_numpy(
+                    graph_info['edge_feat']).to(
+                    self.device),
+                edge_index=torch.from_numpy(
+                    graph_info['edge_index']).to(
+                    self.device),
+                num_nodes=graph_info['num_nodes'])
         elif return_type == 'positional_encoding':
             eig_vals, eig_vecs = self.get_pos_enc(idx)
             eig_vals = eig_vals.to(self.device)
@@ -80,7 +100,7 @@ class OGBGDatasetExtension(GraphPropPredDataset):
     def get_san_graph(self, idx):
         """
 
-        :param idx: 
+        :param idx:
 
         """
         if idx in self.san_graphs:
@@ -88,36 +108,51 @@ class OGBGDatasetExtension(GraphPropPredDataset):
         else:
             graph_info = self.graphs[idx]
             n_atoms = graph_info['num_nodes']
-            src = torch.repeat_interleave(torch.arange(n_atoms, device=self.device), n_atoms - 1)
-            dst = torch.cat([torch.cat(
-                [torch.arange(n_atoms, device=self.device)[:idx], torch.arange(n_atoms, device=self.device)[idx + 1:]])
-                for idx in range(n_atoms)])  # without self loops
+            src = torch.repeat_interleave(
+                torch.arange(
+                    n_atoms,
+                    device=self.device),
+                n_atoms - 1)
+            dst = torch.cat([torch.cat([torch.arange(n_atoms, device=self.device)[:idx], torch.arange(
+                n_atoms, device=self.device)[idx + 1:]]) for idx in range(n_atoms)])  # without self loops
             g = dgl.graph((src, dst), device=self.device)
-            g.ndata['feat'] = torch.from_numpy(graph_info['node_feat']).to(self.device)
+            g.ndata['feat'] = torch.from_numpy(
+                graph_info['node_feat']).to(
+                self.device)
 
-            e_features = torch.from_numpy(graph_info['edge_feat']).to(self.device)
-            g.edata['feat'] = torch.zeros(g.number_of_edges(), e_features.shape[1], dtype=torch.long,
-                                          device=self.device)
-            g.edata['real'] = torch.zeros(g.number_of_edges(), dtype=torch.long, device=self.device)
-            g.edges[graph_info['edge_index'][0], graph_info['edge_index'][1]].data['feat'] = e_features
-            g.edges[graph_info['edge_index'][0], graph_info['edge_index'][1]].data['real'] = torch.ones(
-                e_features.shape[0],
+            e_features = torch.from_numpy(
+                graph_info['edge_feat']).to(
+                self.device)
+            g.edata['feat'] = torch.zeros(
+                g.number_of_edges(),
+                e_features.shape[1],
                 dtype=torch.long,
-                device=self.device)  # This indicates real edges
+                device=self.device)
+            g.edata['real'] = torch.zeros(
+                g.number_of_edges(),
+                dtype=torch.long,
+                device=self.device)
+            g.edges[graph_info['edge_index'][0],
+                    graph_info['edge_index'][1]].data['feat'] = e_features
+            g.edges[graph_info['edge_index'][0], graph_info['edge_index'][1]].data['real'] = torch.ones(
+                e_features.shape[0], dtype=torch.long, device=self.device)  # This indicates real edges
             self.san_graphs[idx] = g.cpu()
             return g
 
     def get_graph(self, idx):
         """
 
-        :param idx: 
+        :param idx:
 
         """
         if idx in self.dgl_graphs:
             return self.dgl_graphs[idx]
         else:
             graph_info = self.graphs[idx]
-            g = dgl.graph((graph_info['edge_index'][0], graph_info['edge_index'][1]), num_nodes=graph_info['num_nodes'])
+            g = dgl.graph(
+                (graph_info['edge_index'][0],
+                 graph_info['edge_index'][1]),
+                num_nodes=graph_info['num_nodes'])
             g.ndata['feat'] = torch.from_numpy(graph_info['node_feat'])
             g.edata['feat'] = torch.from_numpy(graph_info['edge_feat'])
             return g
@@ -125,7 +160,7 @@ class OGBGDatasetExtension(GraphPropPredDataset):
     def get_pos_enc(self, idx):
         """
 
-        :param idx: 
+        :param idx:
 
         """
         if idx in self.pos_enc:
@@ -134,8 +169,10 @@ class OGBGDatasetExtension(GraphPropPredDataset):
             graph_info = self.graphs[idx]
             edge_index = graph_info['edge_index']
             n_atoms = graph_info['num_nodes']
-            sparse = torch.sparse_coo_tensor(edge_index, torch.ones(edge_index.shape[1]), size=(n_atoms, n_atoms),
-                                             device=self.device)
+            sparse = torch.sparse_coo_tensor(
+                edge_index, torch.ones(
+                    edge_index.shape[1]), size=(
+                    n_atoms, n_atoms), device=self.device)
             A = sparse.to_dense()
             A += torch.eye(n_atoms, device=self.device)
             D = A.sum(dim=0)
@@ -146,14 +183,17 @@ class OGBGDatasetExtension(GraphPropPredDataset):
             L_sym = torch.eye(n_atoms, device=self.device) - N * L * N
 
             eig_vals, eig_vecs = torch.linalg.eigh(L_sym)
-            idx = eig_vals.argsort()[0: self.num_freq]  # Keep up to the maximum desired number of frequencies
+            # Keep up to the maximum desired number of frequencies
+            idx = eig_vals.argsort()[0: self.num_freq]
             eig_vals, eig_vecs = eig_vals[idx], eig_vecs[:, idx]
 
             # Sort, normalize and pad EigenVectors
             eig_vecs = eig_vecs[:, eig_vals.argsort()]  # increasing order
             eig_vecs = F.normalize(eig_vecs, p=2, dim=1, eps=1e-12, out=None)
             if n_atoms < self.num_freq:
-                eig_vecs = F.pad(eig_vecs, (0, self.num_freq - n_atoms), value=float('nan'))
-                eig_vals = F.pad(eig_vals, (0, self.num_freq - n_atoms), value=float('nan'))
+                eig_vecs = F.pad(
+                    eig_vecs, (0, self.num_freq - n_atoms), value=float('nan'))
+                eig_vals = F.pad(
+                    eig_vals, (0, self.num_freq - n_atoms), value=float('nan'))
             self.pos_enc[idx] = (eig_vals.cpu(), eig_vecs.cpu())
             return self.pos_enc[idx]

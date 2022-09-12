@@ -2,7 +2,17 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-SUPPORTED_ACTIVATION_MAP = {'ReLU', 'Sigmoid', 'Tanh', 'ELU', 'SELU', 'GLU', 'LeakyReLU', 'Softplus', 'SiLU', 'None'}
+SUPPORTED_ACTIVATION_MAP = {
+    'ReLU',
+    'Sigmoid',
+    'Tanh',
+    'ELU',
+    'SELU',
+    'GLU',
+    'LeakyReLU',
+    'Softplus',
+    'SiLU',
+    'None'}
 EPS = 1e-5
 
 
@@ -12,8 +22,10 @@ def get_activation(activation):
         # activation is already a function
         return activation
     # search in SUPPORTED_ACTIVATION_MAP a torch.nn.modules.activation
-    activation = [x for x in SUPPORTED_ACTIVATION_MAP if activation.lower() == x.lower()]
-    assert len(activation) == 1 and isinstance(activation[0], str), 'Unhandled activation function'
+    activation = [
+        x for x in SUPPORTED_ACTIVATION_MAP if activation.lower() == x.lower()]
+    assert len(activation) == 1 and isinstance(
+        activation[0], str), 'Unhandled activation function'
     activation = activation[0]
     if activation.lower() == 'none':
         return None
@@ -68,9 +80,17 @@ class FCLayer(nn.Module):
             Output dimension of the linear layer
     """
 
-    def __init__(self, in_dim, out_dim, activation='relu', dropout=0., batch_norm=False, batch_norm_momentum=0.1,
-                 bias=True, init_fn=None,
-                 device='cpu'):
+    def __init__(
+            self,
+            in_dim,
+            out_dim,
+            activation='relu',
+            dropout=0.,
+            batch_norm=False,
+            batch_norm_momentum=0.1,
+            bias=True,
+            init_fn=None,
+            device='cpu'):
         super(FCLayer, self).__init__()
         self.__params = locals()
         del self.__params['__class__']
@@ -84,7 +104,8 @@ class FCLayer(nn.Module):
         if dropout:
             self.dropout = nn.Dropout(p=dropout)
         if batch_norm:
-            self.batch_norm = nn.BatchNorm1d(out_dim, momentum=batch_norm_momentum).to(device)
+            self.batch_norm = nn.BatchNorm1d(
+                out_dim, momentum=batch_norm_momentum).to(device)
         self.activation = get_activation(activation)
         self.init_fn = nn.init.xavier_uniform_
 
@@ -116,8 +137,19 @@ class MLP(nn.Module):
         Simple multi-layer perceptron, built of a series of FCLayers
     """
 
-    def __init__(self, in_dim, out_dim, layers, hidden_size=None, mid_activation='relu', last_activation='none',
-                 dropout=0., mid_batch_norm=False, last_batch_norm=False, batch_norm_momentum=0.1, device='cpu'):
+    def __init__(
+            self,
+            in_dim,
+            out_dim,
+            layers,
+            hidden_size=None,
+            mid_activation='relu',
+            last_activation='none',
+            dropout=0.,
+            mid_batch_norm=False,
+            last_batch_norm=False,
+            batch_norm_momentum=0.1,
+            device='cpu'):
         super(MLP, self).__init__()
 
         self.in_dim = in_dim
@@ -126,32 +158,63 @@ class MLP(nn.Module):
 
         self.fully_connected = nn.ModuleList()
         if layers <= 1:
-            self.fully_connected.append(FCLayer(in_dim, out_dim, activation=last_activation, batch_norm=last_batch_norm,
-                                                device=device, dropout=dropout,
-                                                batch_norm_momentum=batch_norm_momentum))
+            self.fully_connected.append(
+                FCLayer(
+                    in_dim,
+                    out_dim,
+                    activation=last_activation,
+                    batch_norm=last_batch_norm,
+                    device=device,
+                    dropout=dropout,
+                    batch_norm_momentum=batch_norm_momentum))
         else:
             self.fully_connected.append(
-                FCLayer(in_dim, hidden_size, activation=mid_activation, batch_norm=mid_batch_norm,
-                        device=device, dropout=dropout, batch_norm_momentum=batch_norm_momentum))
+                FCLayer(
+                    in_dim,
+                    hidden_size,
+                    activation=mid_activation,
+                    batch_norm=mid_batch_norm,
+                    device=device,
+                    dropout=dropout,
+                    batch_norm_momentum=batch_norm_momentum))
             for _ in range(layers - 2):
-                self.fully_connected.append(FCLayer(hidden_size, hidden_size, activation=mid_activation,
-                                                    batch_norm=mid_batch_norm, device=device, dropout=dropout,
-                                                    batch_norm_momentum=batch_norm_momentum))
+                self.fully_connected.append(
+                    FCLayer(
+                        hidden_size,
+                        hidden_size,
+                        activation=mid_activation,
+                        batch_norm=mid_batch_norm,
+                        device=device,
+                        dropout=dropout,
+                        batch_norm_momentum=batch_norm_momentum))
             self.fully_connected.append(
-                FCLayer(hidden_size, out_dim, activation=last_activation, batch_norm=last_batch_norm,
-                        device=device, dropout=dropout, batch_norm_momentum=batch_norm_momentum))
+                FCLayer(
+                    hidden_size,
+                    out_dim,
+                    activation=last_activation,
+                    batch_norm=last_batch_norm,
+                    device=device,
+                    dropout=dropout,
+                    batch_norm_momentum=batch_norm_momentum))
 
     def forward(self, x):
         for fc in self.fully_connected:
             x = fc(x)
         return x
 
+
 class MLPReadout(nn.Module):
 
     def __init__(self, input_dim, output_dim, L=2):  # L=nb_hidden_layers
         super().__init__()
-        list_FC_layers = [nn.Linear(input_dim // 2 ** l, input_dim // 2 ** (l + 1), bias=True) for l in range(L)]
-        list_FC_layers.append(nn.Linear(input_dim // 2 ** L, output_dim, bias=True))
+        list_FC_layers = [nn.Linear(
+            input_dim // 2 ** l, input_dim // 2 ** (l + 1), bias=True) for l in range(L)]
+        list_FC_layers.append(
+            nn.Linear(
+                input_dim //
+                2 ** L,
+                output_dim,
+                bias=True))
         self.FC_layers = nn.ModuleList(list_FC_layers)
         self.L = L
 

@@ -13,10 +13,12 @@ class SelfSupervisedAlternatingTrainer(SelfSupervisedTrainer):
             view2d = self.model(graph)
             with torch.no_grad():
                 view3d = self.model3d(info3d)
-            loss = self.loss_func(view2d, view3d, nodes_per_graph=graph.batch_num_nodes())
+            loss = self.loss_func(
+                view2d, view3d, nodes_per_graph=graph.batch_num_nodes())
         else:
             with torch.no_grad():
                 view2d = self.model(graph)
             view3d = self.model3d(info3d)
-            loss = self.loss_func(view3d, view2d, nodes_per_graph=graph.batch_num_nodes())
+            loss = self.loss_func(
+                view3d, view2d, nodes_per_graph=graph.batch_num_nodes())
         return loss, view2d, view3d

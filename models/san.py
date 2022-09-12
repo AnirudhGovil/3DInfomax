@@ -41,7 +41,10 @@ def imp_exp_attn(implicit_attn, explicit_edge):
     """
 
     def func(edges):
-        return {implicit_attn: (edges.data[implicit_attn] * edges.data[explicit_edge])}
+        return {
+            implicit_attn: (
+                edges.data[implicit_attn] *
+                edges.data[explicit_edge])}
 
     return func
 
@@ -49,7 +52,8 @@ def imp_exp_attn(implicit_attn, explicit_edge):
 def exp_real(field, L):
     def func(edges):
         # clamp for softmax numerical stability
-        return {'score_soft': torch.exp((edges.data[field].sum(-1, keepdim=True)).clamp(-5, 5)) / (L + 1)}
+        return {'score_soft': torch.exp(
+            (edges.data[field].sum(-1, keepdim=True)).clamp(-5, 5)) / (L + 1)}
 
     return func
 
@@ -57,7 +61,8 @@ def exp_real(field, L):
 def exp_fake(field, L):
     def func(edges):
         # clamp for softmax numerical stability
-        return {'score_soft': L * torch.exp((edges.data[field].sum(-1, keepdim=True)).clamp(-5, 5)) / (L + 1)}
+        return {'score_soft': L * \
+            torch.exp((edges.data[field].sum(-1, keepdim=True)).clamp(-5, 5)) / (L + 1)}
 
     return func
 
@@ -65,7 +70,8 @@ def exp_fake(field, L):
 def exp(field):
     def func(edges):
         # clamp for softmax numerical stability
-        return {'score_soft': torch.exp((edges.data[field].sum(-1, keepdim=True)).clamp(-5, 5))}
+        return {'score_soft': torch.exp(
+            (edges.data[field].sum(-1, keepdim=True)).clamp(-5, 5))}
 
     return func
 
@@ -76,7 +82,14 @@ def exp(field):
 
 
 class MultiHeadAttentionLayer(nn.Module):
-    def __init__(self, gamma, in_dim, out_dim, num_heads, full_graph, use_bias):
+    def __init__(
+            self,
+            gamma,
+            in_dim,
+            out_dim,
+            num_heads,
+            full_graph,
+            use_bias):
         super().__init__()
 
         self.out_dim = out_dim
@@ -141,8 +154,14 @@ class MultiHeadAttentionLayer(nn.Module):
 
         # Send weighted values to target nodes
         eids = g.edges()
-        g.send_and_recv(eids, fn.src_mul_edge('V_h', 'score_soft', 'V_h'), fn.sum('V_h', 'wV'))
-        g.send_and_recv(eids, fn.copy_edge('score_soft', 'score_soft'), fn.sum('score_soft', 'z'))
+        g.send_and_recv(
+            eids, fn.src_mul_edge(
+                'V_h', 'score_soft', 'V_h'), fn.sum(
+                'V_h', 'wV'))
+        g.send_and_recv(
+            eids, fn.copy_edge(
+                'score_soft', 'score_soft'), fn.sum(
+                'score_soft', 'z'))
 
     def forward(self, g, h, e):
 
@@ -172,18 +191,29 @@ class MultiHeadAttentionLayer(nn.Module):
 
         self.propagate_attention(g)
 
-        h_out = g.ndata['wV'] / (g.ndata['z'] + torch.full_like(g.ndata['z'], 1e-6))
+        h_out = g.ndata['wV'] / \
+            (g.ndata['z'] + torch.full_like(g.ndata['z'], 1e-6))
 
         return h_out
 
 
 class GraphTransformerLayer(nn.Module):
     """
-        Param: 
+        Param:
     """
 
-    def __init__(self, gamma, in_dim, out_dim, num_heads, full_graph, dropout=0.0, layer_norm=False, batch_norm=True,
-                 residual=True, use_bias=False):
+    def __init__(
+            self,
+            gamma,
+            in_dim,
+            out_dim,
+            num_heads,
+            full_graph,
+            dropout=0.0,
+            layer_norm=False,
+            batch_norm=True,
+            residual=True,
+            use_bias=False):
         super().__init__()
 
         self.in_channels = in_dim
@@ -194,7 +224,8 @@ class GraphTransformerLayer(nn.Module):
         self.layer_norm = layer_norm
         self.batch_norm = batch_norm
 
-        self.attention = MultiHeadAttentionLayer(gamma, in_dim, out_dim // num_heads, num_heads, full_graph, use_bias)
+        self.attention = MultiHeadAttentionLayer(
+            gamma, in_dim, out_dim // num_heads, num_heads, full_graph, use_bias)
 
         self.O_h = nn.Linear(out_dim, out_dim)
 
@@ -257,28 +288,62 @@ class GraphTransformerLayer(nn.Module):
 
 
 class SAN(nn.Module):
-    def __init__(self, GT_out_dim, readout_hidden_dim, readout_batchnorm, readout_aggregators, target_dim,
-                 readout_layers, batch_norm_momentum, **kwargs):
+    def __init__(
+            self,
+            GT_out_dim,
+            readout_hidden_dim,
+            readout_batchnorm,
+            readout_aggregators,
+            target_dim,
+            readout_layers,
+            batch_norm_momentum,
+            **kwargs):
         super().__init__()
         self.readout_aggregators = readout_aggregators
-        self.gnn = SAN_NodeLPE(GT_out_dim=GT_out_dim, batch_norm_momentum=batch_norm_momentum, **kwargs)
-        self.output = MLP(in_dim=GT_out_dim * len(self.readout_aggregators), hidden_size=readout_hidden_dim,
-                          mid_batch_norm=readout_batchnorm, out_dim=target_dim,
+        self.gnn = SAN_NodeLPE(
+            GT_out_dim=GT_out_dim,
+            batch_norm_momentum=batch_norm_momentum,
+            **kwargs)
+        self.output = MLP(in_dim=GT_out_dim * len(self.readout_aggregators),
+                          hidden_size=readout_hidden_dim,
+                          mid_batch_norm=readout_batchnorm,
+                          out_dim=target_dim,
                           layers=readout_layers,
                           batch_norm_momentum=batch_norm_momentum)
 
     def forward(self, g):
         self.gnn(g)
 
-        readouts_to_cat = [dgl.readout_nodes(g, 'feat', op=aggr) for aggr in self.readout_aggregators]
+        readouts_to_cat = [
+            dgl.readout_nodes(
+                g,
+                'feat',
+                op=aggr) for aggr in self.readout_aggregators]
         readout = torch.cat(readouts_to_cat, dim=-1)
         return self.output(readout)
 
 
 class SAN_NodeLPE(nn.Module):
-    def __init__(self, node_dim, edge_dim, batch_norm_momentum, residual, in_feat_dropout, dropout,
-                 layer_norm, batch_norm, gamma, full_graph, GT_hidden_dim, GT_n_heads, GT_out_dim, GT_layers,
-                 LPE_n_heads, LPE_layers, LPE_dim, **kwargs):
+    def __init__(
+            self,
+            node_dim,
+            edge_dim,
+            batch_norm_momentum,
+            residual,
+            in_feat_dropout,
+            dropout,
+            layer_norm,
+            batch_norm,
+            gamma,
+            full_graph,
+            GT_hidden_dim,
+            GT_n_heads,
+            GT_out_dim,
+            GT_layers,
+            LPE_n_heads,
+            LPE_layers,
+            LPE_dim,
+            **kwargs):
         super().__init__()
 
         self.residual = residual
@@ -288,23 +353,42 @@ class SAN_NodeLPE(nn.Module):
 
         self.in_feat_dropout = nn.Dropout(in_feat_dropout)
 
-
         self.embedding_h = AtomEncoder(emb_dim=GT_hidden_dim - LPE_dim)
         self.embedding_e_real = BondEncoder(emb_dim=GT_hidden_dim)
         self.embedding_e_fake = BondEncoder(emb_dim=GT_hidden_dim)
 
         self.linear_A = nn.Linear(2, LPE_dim)
 
-        encoder_layer = nn.TransformerEncoderLayer(d_model=LPE_dim, nhead=LPE_n_heads)
-        self.PE_Transformer = nn.TransformerEncoder(encoder_layer, num_layers=LPE_layers)
+        encoder_layer = nn.TransformerEncoderLayer(
+            d_model=LPE_dim, nhead=LPE_n_heads)
+        self.PE_Transformer = nn.TransformerEncoder(
+            encoder_layer, num_layers=LPE_layers)
 
-        self.layers = nn.ModuleList([GraphTransformerLayer(gamma, GT_hidden_dim, GT_hidden_dim, GT_n_heads, full_graph,
-                                                           dropout, self.layer_norm, self.batch_norm, self.residual) for
-                                     _ in range(GT_layers - 1)])
+        self.layers = nn.ModuleList(
+            [
+                GraphTransformerLayer(
+                    gamma,
+                    GT_hidden_dim,
+                    GT_hidden_dim,
+                    GT_n_heads,
+                    full_graph,
+                    dropout,
+                    self.layer_norm,
+                    self.batch_norm,
+                    self.residual) for _ in range(
+                    GT_layers - 1)])
 
         self.layers.append(
-            GraphTransformerLayer(gamma, GT_hidden_dim, GT_out_dim, GT_n_heads, full_graph, dropout, self.layer_norm,
-                                  self.batch_norm, self.residual))
+            GraphTransformerLayer(
+                gamma,
+                GT_hidden_dim,
+                GT_out_dim,
+                GT_n_heads,
+                full_graph,
+                dropout,
+                self.layer_norm,
+                self.batch_norm,
+                self.residual))
 
     def forward(self, g):
         # input embedding
@@ -312,13 +396,17 @@ class SAN_NodeLPE(nn.Module):
         e = self.embedding_e_real(g.edata['feat'])
 
         PosEnc = g.ndata['pos_enc']  # (Num nodes) x (Num Eigenvectors) x 2
-        empty_mask = torch.isnan(PosEnc)  # (Num nodes) x (Num Eigenvectors) x 2
+        # (Num nodes) x (Num Eigenvectors) x 2
+        empty_mask = torch.isnan(PosEnc)
 
         PosEnc[empty_mask] = 0  # (Num nodes) x (Num Eigenvectors) x 2
-        PosEnc = torch.transpose(PosEnc, 0, 1).float()  # (Num Eigenvectors) x (Num nodes) x 2
-        PosEnc = self.linear_A(PosEnc)  # (Num Eigenvectors) x (Num nodes) x PE_dim
+        # (Num Eigenvectors) x (Num nodes) x 2
+        PosEnc = torch.transpose(PosEnc, 0, 1).float()
+        # (Num Eigenvectors) x (Num nodes) x PE_dim
+        PosEnc = self.linear_A(PosEnc)
         # 1st Transformer: Learned PE
-        PosEnc = self.PE_Transformer(src=PosEnc, src_key_padding_mask=empty_mask[:, :, 0])
+        PosEnc = self.PE_Transformer(
+            src=PosEnc, src_key_padding_mask=empty_mask[:, :, 0])
         # remove masked sequences
         PosEnc[torch.transpose(empty_mask, 0, 1)[:, :, 0]] = float('nan')
         # Sum pooling

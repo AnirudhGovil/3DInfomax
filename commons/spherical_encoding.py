@@ -21,8 +21,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 def Jn(r, n):
     """The formula returns a loss fucntion the Message Passing NN
 
-    :param r: 
-    :param n: 
+    :param r:
+    :param n:
 
     """
     return np.sqrt(np.pi / (2 * r)) * sp.jv(n + 0.5, r)
@@ -31,8 +31,8 @@ def Jn(r, n):
 def Jn_zeros(n, k):
     """The zeroes correspond to racines
 
-    :param n: 
-    :param k: 
+    :param n:
+    :param k:
 
     """
     zerosj = np.zeros((n, k), dtype='float32')
@@ -52,7 +52,7 @@ def Jn_zeros(n, k):
 def spherical_bessel_formulas(n):
     """
 
-    :param n: 
+    :param n:
 
     """
     x = sym.symbols('x')
@@ -69,8 +69,8 @@ def spherical_bessel_formulas(n):
 def bessel_basis(n, k):
     """
 
-    :param n: 
-    :param k: 
+    :param n:
+    :param k:
 
     """
     zeros = Jn_zeros(n, k)
@@ -99,8 +99,8 @@ def bessel_basis(n, k):
 def sph_harm_prefactor(k, m):
     """
 
-    :param k: 
-    :param m: 
+    :param k:
+    :param m:
 
     """
     return ((2 * k + 1) * np.math.factorial(k - abs(m)) /
@@ -110,7 +110,7 @@ def sph_harm_prefactor(k, m):
 def associated_legendre_polynomials(k, zero_m_only=True):
     """
 
-    :param k: 
+    :param k:
     :param zero_m_only:  (Default value = True)
 
     """
@@ -142,7 +142,7 @@ def real_sph_harm(l, zero_m_only=False, spherical_coordinates=True):
     """Computes formula strings of the the real part of the spherical harmonics up to order l (excluded).
     Variables are either cartesian coordinates x,y,z on the unit sphere or spherical coordinates phi and theta.
 
-    :param l: 
+    :param l:
     :param zero_m_only:  (Default value = False)
     :param spherical_coordinates:  (Default value = True)
 
@@ -167,16 +167,26 @@ def real_sph_harm(l, zero_m_only=False, spherical_coordinates=True):
         z = sym.symbols('z')
         for i in range(len(P_l_m)):
             for j in range(len(P_l_m[i])):
-                if type(P_l_m[i][j]) != int:
+                if not isinstance(P_l_m[i][j], int):
                     P_l_m[i][j] = P_l_m[i][j].subs(z, sym.cos(theta))
         if not zero_m_only:
             phi = sym.symbols('phi')
             for i in range(len(S_m)):
-                S_m[i] = S_m[i].subs(x, sym.sin(
-                    theta) * sym.cos(phi)).subs(y, sym.sin(theta) * sym.sin(phi))
+                S_m[i] = S_m[i].subs(
+                    x,
+                    sym.sin(theta) *
+                    sym.cos(phi)).subs(
+                    y,
+                    sym.sin(theta) *
+                    sym.sin(phi))
             for i in range(len(C_m)):
-                C_m[i] = C_m[i].subs(x, sym.sin(
-                    theta) * sym.cos(phi)).subs(y, sym.sin(theta) * sym.sin(phi))
+                C_m[i] = C_m[i].subs(
+                    x,
+                    sym.sin(theta) *
+                    sym.cos(phi)).subs(
+                    y,
+                    sym.sin(theta) *
+                    sym.sin(phi))
 
     Y_func_l_m = [['0'] * (2 * j + 1) for j in range(l)]
     for i in range(l):
@@ -197,6 +207,7 @@ def real_sph_harm(l, zero_m_only=False, spherical_coordinates=True):
 
 class Envelope(torch.nn.Module):
     """ """
+
     def __init__(self, exponent):
         super(Envelope, self).__init__()
         self.p = exponent + 1
@@ -207,7 +218,7 @@ class Envelope(torch.nn.Module):
     def forward(self, x):
         """
 
-        :param x: 
+        :param x:
 
         """
         p, a, b, c = self.p, self.a, self.b, self.c
@@ -219,6 +230,7 @@ class Envelope(torch.nn.Module):
 
 class dist_emb(torch.nn.Module):
     """ """
+
     def __init__(self, num_radial, cutoff=5.0, envelope_exponent=5):
         super(dist_emb, self).__init__()
         self.cutoff = cutoff
@@ -235,16 +247,18 @@ class dist_emb(torch.nn.Module):
     def forward(self, dist):
         """
 
-        :param dist: 
+        :param dist:
 
         """
-        dist = dist.unsqueeze(-1) if len(dist.shape) == 1 else dist  # add singleton dim if not already existent
+        dist = dist.unsqueeze(-1) if len(
+            dist.shape) == 1 else dist  # add singleton dim if not already existent
         dist = dist / self.cutoff
         return self.envelope(dist) * (self.freq * dist).sin()
 
 
 class angle_emb(torch.nn.Module):
     """ """
+
     def __init__(self, num_spherical, num_radial, cutoff=5.0,
                  envelope_exponent=5):
         super(angle_emb, self).__init__()
@@ -275,9 +289,9 @@ class angle_emb(torch.nn.Module):
     def forward(self, dist, angle, idx_kj):
         """
 
-        :param dist: 
-        :param angle: 
-        :param idx_kj: 
+        :param dist:
+        :param angle:
+        :param idx_kj:
 
         """
         dist = dist / self.cutoff
@@ -293,6 +307,7 @@ class angle_emb(torch.nn.Module):
 
 class torsion_emb(torch.nn.Module):
     """ """
+
     def __init__(self, num_spherical, num_radial, cutoff=5.0,
                  envelope_exponent=5):
         super(torsion_emb, self).__init__()
@@ -313,12 +328,19 @@ class torsion_emb(torch.nn.Module):
         modules = {'sin': torch.sin, 'cos': torch.cos}
         for i in range(self.num_spherical):
             if i == 0:
-                sph1 = sym.lambdify([theta, phi], sph_harm_forms[i][0], modules)
-                self.sph_funcs.append(lambda x, y: torch.zeros_like(x) + torch.zeros_like(y) + sph1(0,
-                                                                                                    0))  # torch.zeros_like(x) + torch.zeros_like(y)
+                sph1 = sym.lambdify(
+                    [theta, phi], sph_harm_forms[i][0], modules)
+                self.sph_funcs.append(
+                    lambda x,
+                    y: torch.zeros_like(x) +
+                    torch.zeros_like(y) +
+                    sph1(
+                        0,
+                        0))  # torch.zeros_like(x) + torch.zeros_like(y)
             else:
                 for k in range(-i, i + 1):
-                    sph = sym.lambdify([theta, phi], sph_harm_forms[i][k + i], modules)
+                    sph = sym.lambdify(
+                        [theta, phi], sph_harm_forms[i][k + i], modules)
                     self.sph_funcs.append(sph)
             for j in range(self.num_radial):
                 bessel = sym.lambdify([x], bessel_forms[i][j], modules)
@@ -327,10 +349,10 @@ class torsion_emb(torch.nn.Module):
     def forward(self, dist, angle, phi, idx_kj):
         """
 
-        :param dist: 
-        :param angle: 
-        :param phi: 
-        :param idx_kj: 
+        :param dist:
+        :param angle:
+        :param phi:
+        :param idx_kj:
 
         """
         dist = dist / self.cutoff
@@ -338,16 +360,17 @@ class torsion_emb(torch.nn.Module):
         cbf = torch.stack([f(angle, phi) for f in self.sph_funcs], dim=1)
 
         n, k = self.num_spherical, self.num_radial
-        out = (rbf[idx_kj].view(-1, 1, n, k) * cbf.view(-1, n, n, 1)).view(-1, n * n * k)
+        out = (rbf[idx_kj].view(-1, 1, n, k) *
+               cbf.view(-1, n, n, 1)).view(-1, n * n * k)
         return out
 
 
 def xyztodat(pos, edge_index, num_nodes):
     """
 
-    :param pos: 
-    :param edge_index: 
-    :param num_nodes: 
+    :param pos:
+    :param edge_index:
+    :param num_nodes:
 
     """
     j, i = edge_index  # j->i
@@ -356,7 +379,13 @@ def xyztodat(pos, edge_index, num_nodes):
     dist = (pos[i] - pos[j]).pow(2).sum(dim=-1).sqrt()
 
     value = torch.arange(j.size(0), device=j.device)
-    adj_t = SparseTensor(row=i, col=j, value=value, sparse_sizes=(num_nodes, num_nodes))
+    adj_t = SparseTensor(
+        row=i,
+        col=j,
+        value=value,
+        sparse_sizes=(
+            num_nodes,
+            num_nodes))
     adj_t_row = adj_t[j]
     num_triplets = adj_t_row.set_value(None).sum(dim=1).to(torch.long)
 
@@ -375,7 +404,9 @@ def xyztodat(pos, edge_index, num_nodes):
     pos_ji = pos[idx_i] - pos[idx_j]
     pos_jk = pos[idx_k] - pos[idx_j]
     a = (pos_ji * pos_jk).sum(dim=-1)  # cos_angle * |pos_ji| * |pos_jk|
-    b = torch.cross(pos_ji, pos_jk).norm(dim=-1)  # sin_angle * |pos_ji| * |pos_jk|
+    b = torch.cross(
+        pos_ji, pos_jk).norm(
+        dim=-1)  # sin_angle * |pos_ji| * |pos_jk|
     angle = torch.atan2(b, a)
 
     idx_batch = torch.arange(len(idx_i), device=device)
@@ -387,8 +418,8 @@ def xyztodat(pos, edge_index, num_nodes):
     idx_k_t = idx_k.repeat_interleave(num_triplets_t)
     idx_batch_t = idx_batch.repeat_interleave(num_triplets_t)
     mask = idx_i_t != idx_k_n
-    idx_i_t, idx_j_t, idx_k_t, idx_k_n, idx_batch_t = idx_i_t[mask], idx_j_t[mask], idx_k_t[mask], idx_k_n[mask], \
-                                                      idx_batch_t[mask]
+    idx_i_t, idx_j_t, idx_k_t, idx_k_n, idx_batch_t = idx_i_t[
+        mask], idx_j_t[mask], idx_k_t[mask], idx_k_n[mask], idx_batch_t[mask]
 
     # Calculate torsions.
     pos_j0 = pos[idx_k_t] - pos[idx_j_t]
