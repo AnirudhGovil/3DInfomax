@@ -19,10 +19,22 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 def Jn(r, n):
+    """The formula returns a loss fucntion the Message Passing NN
+
+    :param r: 
+    :param n: 
+
+    """
     return np.sqrt(np.pi / (2 * r)) * sp.jv(n + 0.5, r)
 
 
 def Jn_zeros(n, k):
+    """The zeroes correspond to racines
+
+    :param n: 
+    :param k: 
+
+    """
     zerosj = np.zeros((n, k), dtype='float32')
     zerosj[0] = np.arange(1, k + 1) * np.pi
     points = np.arange(1, k + n) * np.pi
@@ -38,6 +50,11 @@ def Jn_zeros(n, k):
 
 
 def spherical_bessel_formulas(n):
+    """
+
+    :param n: 
+
+    """
     x = sym.symbols('x')
 
     f = [sym.sin(x) / x]
@@ -50,6 +67,12 @@ def spherical_bessel_formulas(n):
 
 
 def bessel_basis(n, k):
+    """
+
+    :param n: 
+    :param k: 
+
+    """
     zeros = Jn_zeros(n, k)
     normalizer = []
     for order in range(n):
@@ -74,11 +97,23 @@ def bessel_basis(n, k):
 
 
 def sph_harm_prefactor(k, m):
+    """
+
+    :param k: 
+    :param m: 
+
+    """
     return ((2 * k + 1) * np.math.factorial(k - abs(m)) /
             (4 * np.pi * np.math.factorial(k + abs(m)))) ** 0.5
 
 
 def associated_legendre_polynomials(k, zero_m_only=True):
+    """
+
+    :param k: 
+    :param zero_m_only:  (Default value = True)
+
+    """
     z = sym.symbols('z')
     P_l_m = [[0] * (j + 1) for j in range(k)]
 
@@ -104,9 +139,13 @@ def associated_legendre_polynomials(k, zero_m_only=True):
 
 
 def real_sph_harm(l, zero_m_only=False, spherical_coordinates=True):
-    """
-    Computes formula strings of the the real part of the spherical harmonics up to order l (excluded).
+    """Computes formula strings of the the real part of the spherical harmonics up to order l (excluded).
     Variables are either cartesian coordinates x,y,z on the unit sphere or spherical coordinates phi and theta.
+
+    :param l: 
+    :param zero_m_only:  (Default value = False)
+    :param spherical_coordinates:  (Default value = True)
+
     """
     pi = np.pi
     if not zero_m_only:
@@ -157,6 +196,7 @@ def real_sph_harm(l, zero_m_only=False, spherical_coordinates=True):
 
 
 class Envelope(torch.nn.Module):
+    """ """
     def __init__(self, exponent):
         super(Envelope, self).__init__()
         self.p = exponent + 1
@@ -165,6 +205,11 @@ class Envelope(torch.nn.Module):
         self.c = -self.p * (self.p + 1) / 2
 
     def forward(self, x):
+        """
+
+        :param x: 
+
+        """
         p, a, b, c = self.p, self.a, self.b, self.c
         x_pow_p0 = x.pow(p - 1)
         x_pow_p1 = x_pow_p0 * x
@@ -173,6 +218,7 @@ class Envelope(torch.nn.Module):
 
 
 class dist_emb(torch.nn.Module):
+    """ """
     def __init__(self, num_radial, cutoff=5.0, envelope_exponent=5):
         super(dist_emb, self).__init__()
         self.cutoff = cutoff
@@ -183,15 +229,22 @@ class dist_emb(torch.nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self):
+        """ """
         torch.arange(1, self.freq.numel() + 1, out=self.freq).mul_(PI)
 
     def forward(self, dist):
+        """
+
+        :param dist: 
+
+        """
         dist = dist.unsqueeze(-1) if len(dist.shape) == 1 else dist  # add singleton dim if not already existent
         dist = dist / self.cutoff
         return self.envelope(dist) * (self.freq * dist).sin()
 
 
 class angle_emb(torch.nn.Module):
+    """ """
     def __init__(self, num_spherical, num_radial, cutoff=5.0,
                  envelope_exponent=5):
         super(angle_emb, self).__init__()
@@ -220,6 +273,13 @@ class angle_emb(torch.nn.Module):
                 self.bessel_funcs.append(bessel)
 
     def forward(self, dist, angle, idx_kj):
+        """
+
+        :param dist: 
+        :param angle: 
+        :param idx_kj: 
+
+        """
         dist = dist / self.cutoff
         rbf = torch.stack([f(dist) for f in self.bessel_funcs], dim=1)
         # rbf = self.envelope(dist).unsqueeze(-1) * rbf
@@ -232,6 +292,7 @@ class angle_emb(torch.nn.Module):
 
 
 class torsion_emb(torch.nn.Module):
+    """ """
     def __init__(self, num_spherical, num_radial, cutoff=5.0,
                  envelope_exponent=5):
         super(torsion_emb, self).__init__()
@@ -264,6 +325,14 @@ class torsion_emb(torch.nn.Module):
                 self.bessel_funcs.append(bessel)
 
     def forward(self, dist, angle, phi, idx_kj):
+        """
+
+        :param dist: 
+        :param angle: 
+        :param phi: 
+        :param idx_kj: 
+
+        """
         dist = dist / self.cutoff
         rbf = torch.stack([f(dist) for f in self.bessel_funcs], dim=1)
         cbf = torch.stack([f(angle, phi) for f in self.sph_funcs], dim=1)
@@ -274,6 +343,13 @@ class torsion_emb(torch.nn.Module):
 
 
 def xyztodat(pos, edge_index, num_nodes):
+    """
+
+    :param pos: 
+    :param edge_index: 
+    :param num_nodes: 
+
+    """
     j, i = edge_index  # j->i
 
     # Calculate distances. # number of edges

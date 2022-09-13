@@ -33,6 +33,7 @@ types = {'H': 0, 'Li': 1, 'B': 2, 'C': 3, 'N': 4, 'O': 5, 'F': 6, 'Na': 7, 'Mg':
          'Pt': 31, 'Au': 32, 'Hg': 33, 'Bi': 34}
 
 class QM9GeomolFeaturization(Dataset):
+    """ """
     def __init__(self, return_types: list = None,
                  target_tasks: list = None,
                  normalize: bool = True, device='cuda:0', dist_embedding: bool = False, num_radial: int = 6,
@@ -164,6 +165,11 @@ class QM9GeomolFeaturization(Dataset):
         self.dist_embedding = dist_embedding
 
     def get_pairwise(self, n_atoms):
+        """
+
+        :param n_atoms: 
+
+        """
         if n_atoms in self.pairwise:
             return self.pairwise[n_atoms]
         else:
@@ -198,6 +204,14 @@ class QM9GeomolFeaturization(Dataset):
         return tuple(data)
 
     def get_graph(self, idx, e_start, e_end, n_atoms):
+        """
+
+        :param idx: 
+        :param e_start: 
+        :param e_end: 
+        :param n_atoms: 
+
+        """
         if self.prefetch_graphs:
             g = self.dgl_graphs[idx]
         else:
@@ -206,6 +220,12 @@ class QM9GeomolFeaturization(Dataset):
         return g
 
     def get_complete_graph(self, idx, n_atoms):
+        """
+
+        :param idx: 
+        :param n_atoms: 
+
+        """
         if self.prefetch_graphs:
             g = self.complete_graphs[idx]
         else:
@@ -214,6 +234,14 @@ class QM9GeomolFeaturization(Dataset):
         return g
 
     def get_mol_complete_graph(self, idx, e_start, e_end, n_atoms):
+        """
+
+        :param idx: 
+        :param e_start: 
+        :param e_end: 
+        :param n_atoms: 
+
+        """
         if self.prefetch_graphs:
             g = self.mol_complete_graphs[idx]
         else:
@@ -224,6 +252,16 @@ class QM9GeomolFeaturization(Dataset):
         return g
 
     def data_by_type(self, idx, return_type, e_start, e_end, start, n_atoms):
+        """
+
+        :param idx: 
+        :param return_type: 
+        :param e_start: 
+        :param e_end: 
+        :param start: 
+        :param n_atoms: 
+
+        """
         if return_type == 'dgl_graph':
             g = self.get_graph(idx, e_start, e_end, n_atoms).to(self.device)
             g.ndata['feat'] = self.features_tensor[start: start + n_atoms].to(self.device)
@@ -350,12 +388,13 @@ class QM9GeomolFeaturization(Dataset):
             raise Exception(f'return type not supported: ', return_type)
 
     def one_k_encoding(self, value, choices):
-        """
-        Creates a one-hot encoding with an extra category for uncommon values.
+        """Creates a one-hot encoding with an extra category for uncommon values.
+
         :param value: The value for which the encoding should be one.
         :param choices: A list of possible values.
-        :return: A one-hot encoding of the :code:`value` in a list of length :code:`len(choices) + 1`.
+        :returns: A one-hot encoding of the :code:`value` in a list of length :code:`len(choices) + 1`.
                  If :code:`value` is not in :code:`choices`, then the final element in the encoding is 1.
+
         """
         encoding = [0] * (len(choices) + 1)
         index = choices.index(value) if value in choices else -1
@@ -364,6 +403,11 @@ class QM9GeomolFeaturization(Dataset):
         return encoding
 
     def featurize_mol(self, mol):
+        """
+
+        :param mol: 
+
+        """
         N = mol.GetNumAtoms()
 
         type_idx = []
@@ -425,6 +469,7 @@ class QM9GeomolFeaturization(Dataset):
         return x, edge_index, edge_attr
 
     def process(self):
+        """ """
 
         print('processing data from ({}) and saving it to ({})'.format(self.qm9_directory,
                                                                        os.path.join(self.qm9_directory, 'processed')))

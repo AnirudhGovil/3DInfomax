@@ -3,6 +3,12 @@ import numpy as np
 
 
 def get_cycle_values(cycle_list, start_at=None):
+    """finds cycles in the lattice to identify which atoms might be forming a molecule
+
+    :param cycle_list: 
+    :param start_at:  (Default value = None)
+
+    """
     start_at = 0 if start_at is None else cycle_list.index(start_at)
     while True:
         yield cycle_list[start_at]
@@ -10,6 +16,12 @@ def get_cycle_values(cycle_list, start_at=None):
 
 
 def get_cycle_indices(cycle, start_idx):
+    """returns the final indices of the atoms that compose the molecule based off their position in the lattice
+
+    :param cycle: 
+    :param start_idx: 
+
+    """
     cycle_it = get_cycle_values(cycle, start_idx)
     indices = []
 
@@ -26,6 +38,13 @@ def get_cycle_indices(cycle, start_idx):
 
 
 def get_current_cycle_indices(cycles, cycle_check, idx):
+    """returns the final indices of the atoms to base the transform off
+
+    :param cycles: 
+    :param cycle_check: 
+    :param idx: 
+
+    """
     c_idx = [i for i, c in enumerate(cycle_check) if c][0]
     current_cycle = cycles.pop(c_idx)
     current_idx = current_cycle[(np.array(current_cycle) == idx.item()).nonzero()[0][0]]
@@ -33,11 +52,16 @@ def get_current_cycle_indices(cycles, cycle_check, idx):
 
 
 def align_coords_Kabsch(p_cycle_coords, q_cycle_coords, p_mask, q_mask=None):
-    """
-    align p_cycle_coords with q_cycle_coords
-
+    """align p_cycle_coords with q_cycle_coords
+    
     mask indicates which atoms to apply RMSD minimization over; these atoms are used to calculate the
     final rotation and translation matrices, which are applied to ALL atoms
+
+    :param p_cycle_coords: 
+    :param q_cycle_coords: 
+    :param p_mask: 
+    :param q_mask:  (Default value = None)
+
     """
     if not q_mask:
         q_mask = p_mask

@@ -20,9 +20,11 @@ angle_combos = torch.LongTensor([[0, 1],
 
 
 def get_neighbor_ids(data):
-    """
-    Turns neighbors dicts into the correct indices for the batched graph
+    """Turns neighbors dicts into the correct indices for the batched graph
     Note: this only includes atoms with degree > 1
+
+    :param data: 
+
     """
     # start, end = edge_index
     # idxs, vals = torch.unique(start, return_counts=True)
@@ -42,9 +44,12 @@ def get_neighbor_ids(data):
 
 
 def get_neighbor_bonds(edge_index, bond_type):
-    """
-    Takes the edge indices and bond type and returns dictionary mapping atom index to neighbor bond types
+    """Takes the edge indices and bond type and returns dictionary mapping atom index to neighbor bond types
     Note: this only includes atoms with degree > 1
+
+    :param edge_index: 
+    :param bond_type: 
+
     """
     start, end = edge_index
     idxs, vals = torch.unique(start, return_counts=True)
@@ -53,11 +58,14 @@ def get_neighbor_bonds(edge_index, bond_type):
 
 
 def get_leaf_hydrogens(neighbors, x):
-    """
-    Takes the edge indices and atom features and returns dictionary mapping atom index to neighbors, indicating true
+    """Takes the edge indices and atom features and returns dictionary mapping atom index to neighbors, indicating true
     for hydrogens that are leaf nodes
     Note: this only works because degree = 1 and hydrogen atomic number = 1 (checks when 1 == 1)
     Note: we use the 5th feature index bc this corresponds to the atomic number
+
+    :param neighbors: 
+    :param x: 
+
     """
     # start, end = edge_index
     # degrees = degree(end)
@@ -72,8 +80,12 @@ def get_leaf_hydrogens(neighbors, x):
 
 
 def get_dihedral_pairs(edge_index, neighbors, data):
-    """
-    Given edge indices, return pairs of indices that we must calculate dihedrals for
+    """Given edge indices, return pairs of indices that we must calculate dihedrals for
+
+    :param edge_index: 
+    :param neighbors: 
+    :param data: 
+
     """
     start, end = edge_index
     degrees = degree(end)
@@ -125,9 +137,12 @@ def get_dihedral_pairs(edge_index, neighbors, data):
 
 
 def batch_distance_metrics_from_coords(coords, mask):
-    """
-    Given coordinates of neighboring atoms, compute bond
+    """Given coordinates of neighboring atoms, compute bond
     distances and 2-hop distances in local neighborhood
+
+    :param coords: 
+    :param mask: 
+
     """
     d_mat_mask = mask.unsqueeze(1) * mask.unsqueeze(2)
 
@@ -142,8 +157,11 @@ def batch_distance_metrics_from_coords(coords, mask):
 
 
 def batch_angle_between_vectors(a, b):
-    """
-    Compute angle between two batches of input vectors
+    """Compute angle between two batches of input vectors
+
+    :param a: 
+    :param b: 
+
     """
     inner_product = (a * b).sum(dim=-1)
 
@@ -159,8 +177,11 @@ def batch_angle_between_vectors(a, b):
 
 
 def batch_angles_from_coords(coords, mask):
-    """
-    Given coordinates, compute all local neighborhood angles
+    """Given coordinates, compute all local neighborhood angles
+
+    :param coords: 
+    :param mask: 
+
     """
     if coords.dim() == 4:
         all_possible_combos = coords[:, angle_combos.to(coords.device)]
@@ -177,10 +198,13 @@ def batch_angles_from_coords(coords, mask):
 
 
 def batch_local_stats_from_coords(coords, mask):
-    """
-    Given neighborhood neighbor coordinates, compute bond distances,
+    """Given neighborhood neighbor coordinates, compute bond distances,
     2-hop distances, and angles in local neighborhood (this assumes
     the central atom has coordinates at the origin)
+
+    :param coords: 
+    :param mask: 
+
     """
     one_hop_ds, two_dop_d_mat = batch_distance_metrics_from_coords(coords, mask)
     angles = batch_angles_from_coords(coords, mask)
@@ -188,6 +212,15 @@ def batch_local_stats_from_coords(coords, mask):
 
 
 def batch_dihedrals(p0, p1, p2, p3, angle=False):
+    """
+
+    :param p0: 
+    :param p1: 
+    :param p2: 
+    :param p3: 
+    :param angle:  (Default value = False)
+
+    """
 
     s1 = p1 - p0
     s2 = p2 - p1
@@ -205,6 +238,14 @@ def batch_dihedrals(p0, p1, p2, p3, angle=False):
 
 
 def batch_vector_angles(xn, x, y, yn):
+    """
+
+    :param xn: 
+    :param x: 
+    :param y: 
+    :param yn: 
+
+    """
     uT = xn.view(-1, 3)
     uX = x.view(-1, 3)
     uY = y.view(-1, 3)
@@ -221,9 +262,13 @@ def batch_vector_angles(xn, x, y, yn):
 
 def von_Mises_loss(a, b, a_sin=None, b_sin=None):
     """
+
     :param a: cos of first angle
     :param b: cos of second angle
-    :return: difference of cosines
+    :param a_sin:  (Default value = None)
+    :param b_sin:  (Default value = None)
+    :returns: difference of cosines
+
     """
     if torch.is_tensor(a_sin):
         out = a * b + a_sin * b_sin
@@ -233,15 +278,16 @@ def von_Mises_loss(a, b, a_sin=None, b_sin=None):
 
 
 def rotation_matrix(neighbor_coords, neighbor_mask, neighbor_map, mu=None):
-    """
-    Given predicted neighbor coordinates from model, return rotation matrix
+    """Given predicted neighbor coordinates from model, return rotation matrix
 
     :param neighbor_coords: neighbor coordinates for each edge as defined by dihedral_pairs
         (n_dihedral_pairs, 4, n_generated_confs, 3)
     :param neighbor_mask: mask describing which atoms are present (n_dihedral_pairs, 4)
     :param neighbor_map: mask describing which neighbor corresponds to the other central dihedral atom
         (n_dihedral_pairs, 4) each entry in neighbor_map should have one TRUE entry with the rest as FALSE
-    :return: rotation matrix (n_dihedral_pairs, n_model_confs, 3, 3)
+    :param mu:  (Default value = None)
+    :returns: rotation matrix (n_dihedral_pairs, n_model_confs, 3, 3)
+
     """
 
     if not torch.is_tensor(mu):
@@ -267,15 +313,15 @@ def rotation_matrix(neighbor_coords, neighbor_mask, neighbor_map, mu=None):
 
 
 def rotation_matrix_v2(neighbor_coords, neighbor_mask, neighbor_map):
-    """
-    Given predicted neighbor coordinates from model, return rotation matrix
+    """Given predicted neighbor coordinates from model, return rotation matrix
 
     :param neighbor_coords: neighbor coordinates for each edge as defined by dihedral_pairs
         (n_dihedral_pairs, 4, n_generated_confs, 3)
     :param neighbor_mask: mask describing which atoms are present (n_dihedral_pairs, 4)
     :param neighbor_map: mask describing which neighbor corresponds to the other central dihedral atom
         (n_dihedral_pairs, 4) each entry in neighbor_map should have one TRUE entry with the rest as FALSE
-    :return: rotation matrix (n_dihedral_pairs, n_model_confs, 3, 3)
+    :returns: rotation matrix (n_dihedral_pairs, n_model_confs, 3, 3)
+
     """
 
     p_Y = neighbor_coords[neighbor_map.bool(), :]
@@ -299,11 +345,11 @@ def rotation_matrix_v2(neighbor_coords, neighbor_mask, neighbor_map):
 
 
 def signed_volume(local_coords):
-    """
-    Compute signed volume given ordered neighbor local coordinates
+    """Compute signed volume given ordered neighbor local coordinates
 
-    :param local_coords: (n_tetrahedral_chiral_centers, 4, n_generated_confs, 3)
-    :return: signed volume of each tetrahedral center (n_tetrahedral_chiral_centers, n_generated_confs)
+    :param local_coords: n_tetrahedral_chiral_centers, 4, n_generated_confs, 3)
+    :returns: signed volume of each tetrahedral center (n_tetrahedral_chiral_centers, n_generated_confs)
+
     """
     v1 = local_coords[:, 0] - local_coords[:, 3]
     v2 = local_coords[:, 1] - local_coords[:, 3]
@@ -314,14 +360,14 @@ def signed_volume(local_coords):
 
 
 def rotation_matrix_inf(neighbor_coords, neighbor_mask, neighbor_map):
-    """
-    Given predicted neighbor coordinates from model, return rotation matrix
+    """Given predicted neighbor coordinates from model, return rotation matrix
 
     :param neighbor_coords: neighbor coordinates for each edge as defined by dihedral_pairs (4, n_model_confs, 3)
     :param neighbor_mask: mask describing which atoms are present (4)
     :param neighbor_map: mask describing which neighbor corresponds to the other central dihedral atom (4)
         each entry in neighbor_map should have one TRUE entry with the rest as FALSE
-    :return: rotation matrix (3, 3)
+    :returns: rotation matrix (3, 3)
+
     """
 
     mu = neighbor_coords.sum(dim=0, keepdim=True) / (neighbor_mask.sum(dim=-1, keepdim=True).unsqueeze(-1) + 1e-10)
@@ -343,6 +389,12 @@ def rotation_matrix_inf(neighbor_coords, neighbor_mask, neighbor_map):
 
 
 def build_alpha_rotation_inf(alpha, n_model_confs):
+    """
+
+    :param alpha: 
+    :param n_model_confs: 
+
+    """
 
     H_alpha = torch.FloatTensor([[[1, 0, 0], [0, 0, 0], [0, 0, 0]]]).repeat(n_model_confs, 1, 1)
     H_alpha[:, 1, 1] = torch.cos(alpha)
@@ -354,6 +406,11 @@ def build_alpha_rotation_inf(alpha, n_model_confs):
 
 
 def random_rotation_matrix(dim):
+    """
+
+    :param dim: 
+
+    """
     yaw = torch.rand(dim)
     pitch = torch.rand(dim)
     roll = torch.rand(dim)
@@ -377,8 +434,12 @@ def random_rotation_matrix(dim):
 
 def length_to_mask(length, max_len=None, dtype=None):
     """length: B.
-    return B x max_len.
-    If max_len is None, then max of length will be used.
+
+    :param length: 
+    :param max_len:  (Default value = None)
+    :param dtype:  (Default value = None)
+    :returns: If max_len is None, then max of length will be used.
+
     """
     assert len(length.shape) == 1, 'Length shape should be 1 dimensional.'
     max_len = max_len or length.max().item()

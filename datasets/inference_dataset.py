@@ -20,6 +20,7 @@ hartree2eV = physical_constants['hartree-electron volt relationship'][0]
 
 
 class InferenceDataset(Dataset):
+    """ """
 
     def __init__(self, smiles_txt_path, device='cuda:0', transform=None, **kwargs):
         with open(smiles_txt_path) as file:

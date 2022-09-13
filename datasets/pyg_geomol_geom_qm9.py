@@ -21,12 +21,13 @@ chirality = {ChiralType.CHI_TETRAHEDRAL_CW: -1.,
 
 
 def one_k_encoding(value, choices):
-    """
-    Creates a one-hot encoding with an extra category for uncommon values.
+    """Creates a one-hot encoding with an extra category for uncommon values.
+
     :param value: The value for which the encoding should be one.
     :param choices: A list of possible values.
-    :return: A one-hot encoding of the :code:`value` in a list of length :code:`len(choices) + 1`.
+    :returns: A one-hot encoding of the :code:`value` in a list of length :code:`len(choices) + 1`.
              If :code:`value` is not in :code:`choices`, then the final element in the encoding is 1.
+
     """
     encoding = [0] * (len(choices) + 1)
     index = choices.index(value) if value in choices else -1
@@ -36,6 +37,7 @@ def one_k_encoding(value, choices):
 
 
 class PyGGeomolGeomQM9(InMemoryDataset):
+    """ """
     def __init__(self, return_types=[], root='dataset/GEOM/qm9', transform=None, pre_transform=None, max_confs = 10, **kwargs):
         self.max_confs = max_confs
         super(PyGGeomolGeomQM9, self).__init__(root, transform, pre_transform)
@@ -47,12 +49,19 @@ class PyGGeomolGeomQM9(InMemoryDataset):
 
     @property
     def processed_file_names(self):
+        """ """
         return ['pyg_inmemory_dataset_qm9_processed.pt']
 
     def len(self):
+        """ """
         return len(self.data)
 
     def get(self, idx):
+        """
+
+        :param idx: 
+
+        """
         data = self.data[idx]
         if 'dgl_graph' in self.return_types:
             g = dgl.graph((data.edge_index[0], data.edge_index[1]),num_nodes=data.num_nodes)
@@ -63,11 +72,17 @@ class PyGGeomolGeomQM9(InMemoryDataset):
             return (data)
 
     def open_pickle(self, mol_path):
+        """
+
+        :param mol_path: 
+
+        """
         with open(mol_path, "rb") as f:
             dic = pickle.load(f)
         return dic
 
     def process(self):
+        """ """
         pickle_files = sorted(glob.glob(osp.join(self.root, '*.pickle')))
         data_list = []
         for pickle_file in tqdm(pickle_files):
@@ -79,6 +94,11 @@ class PyGGeomolGeomQM9(InMemoryDataset):
         torch.save((data, slices), self.processed_paths[0])
 
     def featurize_mol(self, mol_dic):
+        """
+
+        :param mol_dic: 
+
+        """
         confs = mol_dic['conformers']
         random.shuffle(confs)  # shuffle confs
         name = mol_dic["smiles"]

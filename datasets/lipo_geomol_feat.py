@@ -38,12 +38,13 @@ chirality = {ChiralType.CHI_TETRAHEDRAL_CW: -1.,
 
 
 def one_k_encoding(value, choices):
-    """
-    Creates a one-hot encoding with an extra category for uncommon values.
+    """Creates a one-hot encoding with an extra category for uncommon values.
+
     :param value: The value for which the encoding should be one.
     :param choices: A list of possible values.
-    :return: A one-hot encoding of the :code:`value` in a list of length :code:`len(choices) + 1`.
+    :returns: A one-hot encoding of the :code:`value` in a list of length :code:`len(choices) + 1`.
              If :code:`value` is not in :code:`choices`, then the final element in the encoding is 1.
+
     """
     encoding = [0] * (len(choices) + 1)
     index = choices.index(value) if value in choices else -1
@@ -52,6 +53,7 @@ def one_k_encoding(value, choices):
     return encoding
 
 class LIPOGeomol(InMemoryDataset):
+    """ """
     def __init__(self, split='train', root='dataset/lipo', transform=None, pre_transform=None, device='cuda:0'):
         super(LIPOGeomol, self).__init__(root, transform, pre_transform)
         split_idx = ['train', 'val', 'test'].index(split)
@@ -61,10 +63,12 @@ class LIPOGeomol(InMemoryDataset):
 
     @property
     def raw_file_names(self):
+        """ """
         return ['Lipophilicity.csv']
 
     @property
     def processed_file_names(self):
+        """ """
         return ['processed_train.pt', 'processed_val.pt', 'processed_test.pt']
 
     def __getitem__(self,idx):
@@ -74,6 +78,7 @@ class LIPOGeomol(InMemoryDataset):
 
 
     def process(self):
+        """ """
         csv_file = pd.read_csv(os.path.join(self.root, self.raw_file_names[0]))
 
         num_data = len(csv_file['smiles'])
@@ -104,6 +109,11 @@ types = {'H': 0, 'Li': 1, 'B': 2, 'C': 3, 'N': 4, 'O': 5, 'F': 6, 'Na': 7, 'Mg':
 
 
 def featurize_mol_from_smiles(smiles):
+    """
+
+    :param smiles: 
+
+    """
 
     # filter mols rdkit can't intrinsically handle
     mol = Chem.MolFromSmiles(smiles)

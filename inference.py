@@ -3,6 +3,10 @@ import concurrent.futures
 import copy
 import os
 import re
+import dgl
+import numpy as np
+import random
+import torch
 
 from icecream import install
 from ogb.lsc import DglPCQM4MDataset, PCQM4MEvaluator
@@ -74,8 +78,8 @@ faulthandler.enable()
 install()
 seaborn.set_theme()
 
-
 def parse_arguments():
+    """This function parses the files and directories that we provide to the inference program"""
     p = argparse.ArgumentParser()
     p.add_argument('--config', type=argparse.FileType(mode='r'), default='configs_clean/fingerprint_inference.yml')
     p.add_argument('--experiment_name', type=str, help='name that will be added to the runs folder output')
@@ -167,6 +171,12 @@ def parse_arguments():
 
 
 def inference(args):
+    """
+    This uses the OBG dataset and corresponding parser to convert strings into their 3d graph representation
+
+    :param args: 
+
+    """
     seed_all(args.seed)
     device = torch.device("cuda:0" if torch.cuda.is_available() and args.device == 'cuda' else "cpu")
     metrics_dict = {'rsquared': Rsquared(),
@@ -221,6 +231,7 @@ def inference(args):
 
 
 def get_arguments():
+    """aids in file redirection based on checkpoints"""
     args = parse_arguments()
 
     if args.config:

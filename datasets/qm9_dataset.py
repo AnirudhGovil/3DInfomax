@@ -21,7 +21,7 @@ hartree2eV = physical_constants['hartree-electron volt relationship'][0]
 
 class QM9Dataset(Dataset):
     """The QM9 Dataset. It loads the specified types of data into memory. The processed data is saved in eV units.
-
+    
     The targets are:
     +--------+----------------------------------+-----------------------------------------------------------------------------------+---------------------------------------------+
     | Target | Property                         | Description                                                                       | Unit                                        |
@@ -50,7 +50,7 @@ class QM9Dataset(Dataset):
     +--------+----------------------------------+-----------------------------------------------------------------------------------+---------------------------------------------+
     | 11     | :math:`c_{\textrm{v}}`           | Heat capavity at 298.15K                                                          | :math:`\frac{\textrm{cal}}{\textrm{mol K}}` |
     +--------+----------------------------------+-----------------------------------------------------------------------------------+---------------------------------------------+
-
+    
     not predicted by dimenet, spherical message passing, E(n) equivariant graph neural networks:
     +--------+----------------------------------+-----------------------------------------------------------------------------------+
     | 12     | :math:`U_0^{\textrm{ATOM}}`      | Atomization energy at 0K                                                          | :math:`\textrm{eV}`                         |
@@ -68,29 +68,8 @@ class QM9Dataset(Dataset):
     | 18     | :math:`C`                        | Rotational constant                                                               | :math:`\textrm{GHz}`                        |
     +--------+----------------------------------+-----------------------------------------------------------------------------------+---------------------------------------------+
 
-    Parameters
-    ----------
-    return_types: list
-        A list with which types of data should be loaded and returened by getitems. Possible options are
-        ['dgl_graph', 'complete_graph', 'raw_features', 'coordinates', 'mol_id', 'targets', 'one_hot_bond_types', 'edge_indices', 'smiles', 'atomic_number_long']
-        and the default is ['dgl_graph', 'targets']
-    features: list
-       A list specifying which features should be included in the returned graphs or raw features
-       options are ['atom_one_hot', 'atomic_number_long', 'hybridizations', 'is_aromatic', 'constant_ones']
-       and default is all except constant ones
-    target_tasks: list
-        A list specifying which targets should be included in the returend targets, if targets are returned.
-        The targets are returned in eV units and saved as eV units in the processed data.
-        options are ['A', 'B', 'C', 'mu', 'alpha', 'homo', 'lumo', 'gap', 'r2', 'zpve', 'u0', 'u298', 'h298', 'g298', 'cv', 'u0_atom', 'u298_atom', 'h298_atom', 'g298_atom']
-        and default is ['mu', 'alpha', 'homo', 'lumo', 'gap', 'r2', 'zpve', 'u0', 'u298', 'h298', 'g298', 'cv']
-        which is the stuff that is commonly predicted by papers like DimeNet, Equivariant GNNs, Spherical message passing
-        The returned targets will be in the order specified by this list
-    normalize: bool
-        Whether or not the target (if they should be returned) are normalized to 0 mean and std 1
-    prefetch_graphs: bool
-        Whether or not to load the dgl graphs into memory. This takes a bit more memory and the upfront computation but
-        the graph creation does not have to be done during training which is nice because it takes a long time and can
-        slow down training
+
+    
     """
 
     def __init__(self, return_types: list = None,
@@ -208,6 +187,11 @@ class QM9Dataset(Dataset):
         return tuple(data)
 
     def get_pairwise(self, n_atoms):
+        """
+
+        :param n_atoms: 
+
+        """
         if n_atoms in self.pairwise:
             src, dst = self.pairwise[n_atoms]
             return src.to(self.device), dst.to(self.device)
@@ -219,6 +203,15 @@ class QM9Dataset(Dataset):
             return src, dst
 
     def get_graph(self, idx, e_start, e_end, n_atoms, start):
+        """
+
+        :param idx: 
+        :param e_start: 
+        :param e_end: 
+        :param n_atoms: 
+        :param start: 
+
+        """
         if idx in self.dgl_graphs:
             return self.dgl_graphs[idx].to(self.device)
         else:
@@ -231,6 +224,13 @@ class QM9Dataset(Dataset):
             return g
 
     def get_complete_graph(self, idx, n_atoms, start):
+        """
+
+        :param idx: 
+        :param n_atoms: 
+        :param start: 
+
+        """
         if idx in self.complete_graphs:
             return self.complete_graphs[idx].to(self.device)
         else:
@@ -244,6 +244,15 @@ class QM9Dataset(Dataset):
             return g
 
     def get_mol_complete_graph(self, idx, e_start, e_end, n_atoms, start):
+        """
+
+        :param idx: 
+        :param e_start: 
+        :param e_end: 
+        :param n_atoms: 
+        :param start: 
+
+        """
         if idx in self.mol_complete_graphs:
             return self.mol_complete_graphs[idx].to(self.device)
         else:
@@ -257,6 +266,16 @@ class QM9Dataset(Dataset):
             return g
 
     def data_by_type(self, idx, return_type, e_start, e_end, start, n_atoms):
+        """
+
+        :param idx: 
+        :param return_type: 
+        :param e_start: 
+        :param e_end: 
+        :param start: 
+        :param n_atoms: 
+
+        """
         if return_type == 'dgl_graph':
             return self.get_graph(idx, e_start, e_end, n_atoms, start)
         elif return_type == 'complete_graph':  # complete graph without self loops
@@ -368,6 +387,7 @@ class QM9Dataset(Dataset):
             raise Exception(f'return type not supported: ', return_type)
 
     def process(self):
+        """ """
         print('processing data from ({}) and saving it to ({})'.format(self.qm9_directory,
                                                                        os.path.join(self.qm9_directory, 'processed')))
 

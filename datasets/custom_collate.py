@@ -10,6 +10,11 @@ from commons.utils import get_adj_matrix
 
 
 def graph_collate(batch: List[Tuple]):
+    """
+
+    :param batch: List[Tuple]: 
+
+    """
     graphs, targets = map(list, zip(*batch))
     batched_graph = dgl.batch(graphs)
     targets = torch.stack(targets).float()
@@ -18,16 +23,31 @@ def graph_collate(batch: List[Tuple]):
     return [batched_graph], targets
 
 def graph_only_collate(batch: List[Tuple]):
+    """
+
+    :param batch: List[Tuple]: 
+
+    """
     return dgl.batch(batch)
 
 
 def pytorch_geometric_collate(batch: List[Tuple]):
+    """
+
+    :param batch: List[Tuple]: 
+
+    """
     graphs, targets = map(list, zip(*batch))
     batched_graph = torch_geometric.data.batch.Batch.from_data_list(graphs)
     return [batched_graph], torch.stack(targets).float()
 
 
 def pyg_and_dgl_graph_collate(batch: List[Tuple]):
+    """
+
+    :param batch: List[Tuple]: 
+
+    """
     graphs = [item[0] for item in batch]
     dgl_graphs = [item[1] for item in batch]
     batched_graph = torch_geometric.data.batch.Batch.from_data_list(graphs)
@@ -35,12 +55,22 @@ def pyg_and_dgl_graph_collate(batch: List[Tuple]):
 
 
 def pyg_graph_only_collate(batch: List[Tuple]):
+    """
+
+    :param batch: List[Tuple]: 
+
+    """
     graphs = [item[0] for item in batch]
     batched_graph = torch_geometric.data.batch.Batch.from_data_list(graphs)
     return [batched_graph]
 
 
 def s_norm_graph_collate(batch: List[Tuple]):
+    """
+
+    :param batch: List[Tuple]: 
+
+    """
     graphs, targets = map(list, zip(*batch))
     tab_sizes_n = [graphs[i].number_of_nodes() for i in range(len(graphs))]
     tab_snorm_n = [torch.FloatTensor(size, 1).fill_(1. / float(size)) for size in tab_sizes_n]
@@ -50,6 +80,11 @@ def s_norm_graph_collate(batch: List[Tuple]):
 
 
 def contrastive_vae_collate(batch: List[Tuple]):
+    """
+
+    :param batch: List[Tuple]: 
+
+    """
     # optionally take targets
     graphs, graphs3d, pairwise_indices, distances = map(list, zip(*batch))
     batched_graph = dgl.batch(graphs)
@@ -63,6 +98,11 @@ def contrastive_vae_collate(batch: List[Tuple]):
     return [batched_graph], [batched_graph3d, torch.cat(pairwise_indices, dim=-1)], torch.cat(distances)
 
 def pairwise_distance_collate(batch: List[Tuple]):
+    """
+
+    :param batch: List[Tuple]: 
+
+    """
     dgl_graphs, pairwise_indices, distances = map(list, zip(*batch))
 
     cumulative_length = 0
@@ -79,6 +119,11 @@ def pairwise_distance_collate(batch: List[Tuple]):
 
 
 def contrastive_graphs_with_mask_collate(batch: List[Tuple]):
+    """
+
+    :param batch: List[Tuple]: 
+
+    """
     dgl_graphs, complete_graph3d = map(list, zip(*batch))
 
     batched_dgl_graph = dgl.batch(dgl_graphs)
@@ -91,6 +136,11 @@ def contrastive_graphs_with_mask_collate(batch: List[Tuple]):
 
 
 def s_norm_contrastive_collate(batch: List[Tuple]):
+    """
+
+    :param batch: List[Tuple]: 
+
+    """
     # optionally take targets
     graphs, graphs3d = map(list, zip(*batch))
     tab_sizes_n = [graphs[i].number_of_nodes() for i in range(len(graphs))]
@@ -103,6 +153,11 @@ def s_norm_contrastive_collate(batch: List[Tuple]):
 
 
 def contrastive_collate(batch: List[Tuple]):
+    """
+
+    :param batch: List[Tuple]: 
+
+    """
     # optionally take targets
     graphs, graphs3d, *targets = map(list, zip(*batch))
     batched_graph = dgl.batch(graphs)
@@ -115,6 +170,11 @@ def contrastive_collate(batch: List[Tuple]):
 
 
 def pytorch_geometric3d_contrastive_collate(batch: List[Tuple]):
+    """
+
+    :param batch: List[Tuple]: 
+
+    """
     graphs, graphs3d = map(list, zip(*batch))
     batched_graph3d = torch_geometric.data.batch.Batch.from_data_list(graphs3d)
     batched_graph = dgl.batch(graphs)
@@ -122,6 +182,11 @@ def pytorch_geometric3d_contrastive_collate(batch: List[Tuple]):
 
 
 def pytorch_geometric2d_contrastive_collate(batch: List[Tuple]):
+    """
+
+    :param batch: List[Tuple]: 
+
+    """
     graphs, graphs3d = map(list, zip(*batch))
     batched_graph = torch_geometric.data.batch.Batch.from_data_list(graphs)
     batched_graph3d = dgl.batch(graphs3d)
@@ -129,6 +194,7 @@ def pytorch_geometric2d_contrastive_collate(batch: List[Tuple]):
 
 
 class NoisedDistancesCollate(object):
+    """ """
     def __init__(self, std, num_noised):
         self.std = std
         self.num_noised = num_noised
@@ -153,11 +219,17 @@ class NoisedDistancesCollate(object):
 
 
 def conformer_collate(batch: List[Tuple]):
+    """
+
+    :param batch: List[Tuple]: 
+
+    """
     graphs, conformers = map(list, zip(*batch))
     return [dgl.batch(graphs)], [dgl.batch(conformers)]
 
 
 class NoisedCoordinatesCollate(object):
+    """ """
     def __init__(self, std, num_noised):
         self.std = std
         self.num_noised = num_noised
@@ -186,6 +258,7 @@ class NoisedCoordinatesCollate(object):
 
 
 class NodeDrop3dCollate(object):
+    """ """
     def __init__(self, num_drop):
         self.num_drop = num_drop
 
@@ -204,6 +277,7 @@ class NodeDrop3dCollate(object):
         return [batched_graph], [batched_graph3d]
 
 class NodeDrop2d3DCollate(object):
+    """ """
     def __init__(self, drop_ratio):
         self.drop_ratio = drop_ratio
 
@@ -228,6 +302,7 @@ class NodeDrop2d3DCollate(object):
         return [batched_graph], [batched_graph3d]
 
 class NodeDropCollate(object):
+    """ """
     def __init__(self, drop_ratio):
         self.drop_ratio = drop_ratio
 
@@ -264,6 +339,7 @@ class NodeDropCollate(object):
 
 
 class NodeDrop2dCollate(object):
+    """ """
     def __init__(self, num_drop):
         self.num_drop = num_drop
 
@@ -283,6 +359,11 @@ class NodeDrop2dCollate(object):
 
 
 def padded_collate(batch):
+    """
+
+    :param batch: 
+
+    """
     features = pad_sequence([item[0] for item in batch], batch_first=True)
     targets = torch.stack([item[1] for item in batch])
 
@@ -294,6 +375,11 @@ def padded_collate(batch):
 
 
 def egnn_padded_collate3d(batch):
+    """
+
+    :param batch: 
+
+    """
     graphs, features, coordinates = map(list, zip(*batch))
     batched_graph = dgl.batch(graphs)
 
@@ -321,6 +407,11 @@ def egnn_padded_collate3d(batch):
 
 
 def egnn_padded_collate(batch):
+    """
+
+    :param batch: 
+
+    """
     features, coordinates, targets = map(list, zip(*batch))
 
     # pad features with -1 because that is used as padding index in the atom embedder in egnn
@@ -347,6 +438,11 @@ def egnn_padded_collate(batch):
 
 
 def padded_collate_positional_encoding(batch):
+    """
+
+    :param batch: 
+
+    """
     features, pos_enc, targets = map(list, zip(*batch))
     features = pad_sequence(features, batch_first=True)
     pos_enc = pad_sequence(pos_enc, batch_first=True)
@@ -359,6 +455,11 @@ def padded_collate_positional_encoding(batch):
 
 
 def pna_transformer_collate(batch):
+    """
+
+    :param batch: 
+
+    """
     graphs, features, pos_enc, targets = map(list, zip(*batch))
     n_atoms = torch.tensor([len(feature) for feature in features])
     features = pad_sequence(features, batch_first=True)
@@ -371,6 +472,11 @@ def pna_transformer_collate(batch):
 
 
 def pna_transformer_collate_contrastive(batch):
+    """
+
+    :param batch: 
+
+    """
     graphs, features, pos_enc, graphs3d = map(list, zip(*batch))
     n_atoms = torch.tensor([len(feature) for feature in features])
     features = pad_sequence(features, batch_first=True)
@@ -383,6 +489,11 @@ def pna_transformer_collate_contrastive(batch):
 
 
 def molhiv_padded_collate(batch: List[Tuple]):
+    """
+
+    :param batch: List[Tuple]: 
+
+    """
     graphs, targets = map(list, zip(*batch))
     features = pad_sequence([graph.ndata['feat'] for graph in graphs], batch_first=True)
 
@@ -392,6 +503,11 @@ def molhiv_padded_collate(batch: List[Tuple]):
 
 
 def padded_distances_collate(batch):
+    """
+
+    :param batch: 
+
+    """
     graphs, distances = map(list, zip(*batch))
     padded = pad_sequence(distances, batch_first=True)
 

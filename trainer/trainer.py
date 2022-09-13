@@ -22,6 +22,9 @@ from commons.utils import flatten_dict, tensorboard_gradient_magnitude, move_to_
 
 
 class Trainer():
+    '''
+    initialises and defines the class that encapsulates the various NN we try the program on
+    '''
     def __init__(self, model, args, metrics: Dict[str, Callable], main_metric: str, device: torch.device,
                  tensorboard_functions: Dict[str, Callable], optim=None, main_metric_goal: str = 'min',
                  loss_func=torch.nn.MSELoss(), scheduler_step_per_batch: bool = True):

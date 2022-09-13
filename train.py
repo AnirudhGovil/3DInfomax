@@ -4,8 +4,10 @@ import copy
 import os
 import re
 
+
 from icecream import install
-from ogb.lsc import DglPCQM4MDataset, PCQM4MEvaluator
+from ogb.lsc import DglPCQM4MDataset
+from ogb.lsc import PCQM4MEvaluator
 from ogb.utils import smiles2graph
 
 from commons.utils import seed_all, get_random_indices, TENSORBOARD_FUNCTIONS
@@ -75,6 +77,7 @@ seaborn.set_theme()
 
 
 def parse_arguments():
+    """Interprets the many argumneants that are provided to the model class"""
     p = argparse.ArgumentParser()
     p.add_argument('--config', type=argparse.FileType(mode='r'), default='configs/pna.yml')
     p.add_argument('--experiment_name', type=str, help='name that will be added to the runs folder output')
@@ -162,6 +165,16 @@ def parse_arguments():
 
 
 def get_trainer(args, model, data, device, metrics):
+    """
+    gets data from the model to the Tensorboard web tool
+
+    :param args: 
+    :param model: 
+    :param data: 
+    :param device: 
+    :param metrics: 
+
+    """
     tensorboard_functions = {function: TENSORBOARD_FUNCTIONS[function] for function in args.tensorboard_functions}
     if args.model3d_type:
         model3d = globals()[args.model3d_type](
@@ -205,6 +218,14 @@ def get_trainer(args, model, data, device, metrics):
 
 
 def load_model(args, data, device):
+    """
+    sets the initial weights (pretraining) of the model
+
+    :param args: 
+    :param data: 
+    :param device: 
+
+    """
     model = globals()[args.model_type](avg_d=data.avg_degree if hasattr(data, 'avg_degree') else 1, device=device,
                                        **args.model_parameters)
     if args.pretrain_checkpoint:
@@ -232,6 +253,12 @@ def load_model(args, data, device):
 
 
 def train(args):
+    """
+    this is the training fucntion is called by the specific benchmarks, it is where the encoding happens
+
+    :param args: 
+
+    """
     seed_all(args.seed)
     device = torch.device("cuda:0" if torch.cuda.is_available() and args.device == 'cuda' else "cpu")
     metrics_dict = {'rsquared': Rsquared(),
@@ -287,6 +314,14 @@ def train(args):
 
 
 def train_geomol(args, device, metrics_dict):
+    """
+    trains using libraries from teh geomol benchmark, for the geomol benchmark
+
+    :param args: 
+    :param device: 
+    :param metrics_dict: 
+
+    """
     if args.dataset == 'bace_geomol':
         dataset = BACEGeomol
     elif args.dataset == 'bbbp_geomol':
@@ -348,6 +383,14 @@ def train_geomol(args, device, metrics_dict):
 
 
 def train_qm9_geomol_featurization(args, device, metrics_dict):
+    """
+    trains using the libraries of the geomol benchmark, for the geomol benchmark
+
+    :param args: 
+    :param device: 
+    :param metrics_dict: 
+
+    """
     all_data = QM9GeomolFeaturization(return_types=args.required_data, target_tasks=args.targets, device=device,
                                       dist_embedding=args.dist_embedding, num_radial=args.num_radial)
 
@@ -398,6 +441,14 @@ def train_qm9_geomol_featurization(args, device, metrics_dict):
 
 
 def train_pcqm4m(args, device, metrics_dict):
+    """
+    trains using the libraries of the pcqm4m benchmark, for the benchmark
+
+    :param args: 
+    :param device: 
+    :param metrics_dict: 
+
+    """
     dataset = DglPCQM4MDataset(smiles2graph=smiles2graph)
     split_idx = dataset.get_idx_split()
     split_idx["train"] = split_idx["train"][:args.num_train]
@@ -426,6 +477,14 @@ def train_pcqm4m(args, device, metrics_dict):
 
 
 def train_ogbg(args, device, metrics_dict):
+    """
+    trains using the functions from the obg benchmark, for the obg databse
+
+    :param args: 
+    :param device: 
+    :param metrics_dict: 
+
+    """
     dataset = OGBGDatasetExtension(return_types=args.required_data, device=device, name=args.dataset)
     split_idx = dataset.get_idx_split()
     if args.force_random_split == True:
@@ -459,6 +518,14 @@ def train_ogbg(args, device, metrics_dict):
 
 
 def train_zinc(args, device, metrics_dict):
+    """
+    trains using the functions from the zinc benchmark, for the zinc databse
+
+    :param args: 
+    :param device: 
+    :param metrics_dict: 
+
+    """
     train_data = ZINCDataset(split='train', device=device)
     val_data = ZINCDataset(split='val', device=device)
     test_data = ZINCDataset(split='test', device=device)
@@ -486,6 +553,14 @@ def train_zinc(args, device, metrics_dict):
 
 
 def train_geom(args, device, metrics_dict):
+    """
+    trains using the methods of the geom benchmark, for the geom database
+
+    :param args: 
+    :param device: 
+    :param metrics_dict: 
+
+    """
     if args.dataset == 'drugs':
         dataset = GEOMDrugs
     elif args.dataset == 'geom_qm9':
@@ -552,6 +627,14 @@ def train_geom(args, device, metrics_dict):
 
 
 def train_qm9(args, device, metrics_dict):
+    """
+    trains using the methods of the qm9 benchmark, for the qm9 database
+
+    :param args: 
+    :param device: 
+    :param metrics_dict: 
+
+    """
     if args.dataset == 'qm9_rdkit':
         all_data = QM9DatasetRDKITConformers(return_types=args.required_data, target_tasks=args.targets, device=device,
                               dist_embedding=args.dist_embedding, num_radial=args.num_radial)
@@ -613,6 +696,7 @@ def train_qm9(args, device, metrics_dict):
 
 
 def get_arguments():
+    """a helper fucntions that parses the parameters of the various benchmarks"""
     args = parse_arguments()
     if args.config:
         config_dict = yaml.load(args.config, Loader=yaml.FullLoader)

@@ -10,6 +10,7 @@ from torch.utils.data import Subset
 
 
 class OGBGDatasetExtension(GraphPropPredDataset):
+    """ """
     def __init__(self, return_types, name, device, root='dataset', meta_dict=None, num_freq=10):
         super(OGBGDatasetExtension, self).__init__(name=name, root=root, meta_dict=meta_dict)
         '''
@@ -36,6 +37,12 @@ class OGBGDatasetExtension(GraphPropPredDataset):
         return tuple(data)
 
     def data_by_type(self, idx, return_type):
+        """
+
+        :param idx: 
+        :param return_type: 
+
+        """
         if return_type == 'dgl_graph':
             return self.get_graph(idx).to(self.device)
         elif return_type == 'raw_features':
@@ -71,6 +78,11 @@ class OGBGDatasetExtension(GraphPropPredDataset):
             return g
 
     def get_san_graph(self, idx):
+        """
+
+        :param idx: 
+
+        """
         if idx in self.san_graphs:
             return self.san_graphs[idx]
         else:
@@ -96,6 +108,11 @@ class OGBGDatasetExtension(GraphPropPredDataset):
             return g
 
     def get_graph(self, idx):
+        """
+
+        :param idx: 
+
+        """
         if idx in self.dgl_graphs:
             return self.dgl_graphs[idx]
         else:
@@ -106,6 +123,11 @@ class OGBGDatasetExtension(GraphPropPredDataset):
             return g
 
     def get_pos_enc(self, idx):
+        """
+
+        :param idx: 
+
+        """
         if idx in self.pos_enc:
             return self.pos_enc[idx]
         else:

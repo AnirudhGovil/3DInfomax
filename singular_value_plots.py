@@ -30,6 +30,12 @@ checkpoints = [
 device = 'cuda'
 device = torch.device("cuda:0" if torch.cuda.is_available() and device == 'cuda' else "cpu")
 def singular_value_plot(checkpoint, i):
+    """records the performance after each checkpoint during the training
+
+    :param checkpoint: 
+    :param i: 
+
+    """
     args = Namespace()
     arg_dict = args.__dict__
     with open(os.path.join(os.path.dirname(checkpoint), 'train_arguments.yaml'), 'r') as arg_file:

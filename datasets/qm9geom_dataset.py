@@ -20,9 +20,9 @@ hartree2eV = physical_constants['hartree-electron volt relationship'][0]
 
 class QM9Geom(Dataset):
     """The QM9 Dataset. It loads the specified types of data into memory. The processed data is saved in eV units.
-
+    
     The dataset can return these types of data and you choose them via the return_types parameter
-
+    
     - class 0 : dgl_graph
     - class 1 : raw_features: [n_atoms, 10]  10 features for each atom of the molecule (1 hot encoded atomic number, hybridization type, aromatic ...)
     - class 2 : coordinates: [n_atoms, 3] 3D coordinates of each atom
@@ -32,7 +32,7 @@ class QM9Geom(Dataset):
     - class 6 : edge_indices: [2, n_edges] list of edges
     - class 7 : smiles: SMILES representation of the molecule
     - class 8 : atomic_number_long: [n_atoms] atomic numbers
-
+    
     The targets are:
     +--------+----------------------------------+-----------------------------------------------------------------------------------+---------------------------------------------+
     | Target | Property                         | Description                                                                       | Unit                                        |
@@ -61,7 +61,7 @@ class QM9Geom(Dataset):
     +--------+----------------------------------+-----------------------------------------------------------------------------------+---------------------------------------------+
     | 11     | :math:`c_{\textrm{v}}`           | Heat capavity at 298.15K                                                          | :math:`\frac{\textrm{cal}}{\textrm{mol K}}` |
     +--------+----------------------------------+-----------------------------------------------------------------------------------+---------------------------------------------+
-
+    
     not predicted by dimenet, spherical message passing, E(n) equivariant graph neural networks:
     +--------+----------------------------------+-----------------------------------------------------------------------------------+
     | 12     | :math:`U_0^{\textrm{ATOM}}`      | Atomization energy at 0K                                                          | :math:`\textrm{eV}`                         |
@@ -79,29 +79,27 @@ class QM9Geom(Dataset):
     | 18     | :math:`C`                        | Rotational constant                                                               | :math:`\textrm{GHz}`                        |
     +--------+----------------------------------+-----------------------------------------------------------------------------------+---------------------------------------------+
 
-    Parameters
-    ----------
-    return_types: list
-        A list with which types of data should be loaded and returened by getitems. Possible options are
+    :param return_types: A list with which types of data should be loaded and returened by getitems. Possible options are
         ['dgl_graph', 'complete_graph', 'raw_features', 'coordinates', 'mol_id', 'targets', 'one_hot_bond_types', 'edge_indices', 'smiles', 'atomic_number_long']
         and the default is ['dgl_graph', 'targets']
-    features: list
-       A list specifying which features should be included in the returned graphs or raw features
+    :type return_types: list
+    :param features: A list specifying which features should be included in the returned graphs or raw features
        options are ['atom_one_hot', 'atomic_number_long', 'hybridizations', 'is_aromatic', 'constant_ones']
        and default is all except constant ones
-    target_tasks: list
-        A list specifying which targets should be included in the returend targets, if targets are returned.
+    :type features: list
+    :param target_tasks: A list specifying which targets should be included in the returend targets, if targets are returned.
         The targets are returned in eV units and saved as eV units in the processed data.
         options are ['A', 'B', 'C', 'mu', 'alpha', 'homo', 'lumo', 'gap', 'r2', 'zpve', 'u0', 'u298', 'h298', 'g298', 'cv', 'u0_atom', 'u298_atom', 'h298_atom', 'g298_atom']
         and default is ['mu', 'alpha', 'homo', 'lumo', 'gap', 'r2', 'zpve', 'u0', 'u298', 'h298', 'g298', 'cv']
         which is the stuff that is commonly predicted by papers like DimeNet, Equivariant GNNs, Spherical message passing
         The returned targets will be in the order specified by this list
-    normalize: bool
-        Whether or not the target (if they should be returned) are normalized to 0 mean and std 1
-    prefetch_graphs: bool
-        Whether or not to load the dgl graphs into memory. This takes a bit more memory and the upfront computation but
+    :type target_tasks: list
+    :param normalize: Whether or not the target (if they should be returned) are normalized to 0 mean and std 1
+    :type normalize: bool
+    :param prefetch_graphs: Whether or not to load the dgl graphs into memory. This takes a bit more memory and the upfront computation but
         the graph creation does not have to be done during training which is nice because it takes a long time and can
         slow down training
+    :type prefetch_graphs: bool
 
     Attributes
     ----------
@@ -117,20 +115,19 @@ class QM9Geom(Dataset):
         The returned targets will be in the order specified by this list
     features:
         possible features are ['standard_normal_noise', 'implicit-valence','degree','hybridization','chirality','mass','electronegativity','aromatic-bond','formal-charge','radical-electron','in-ring','atomic-number', 'pos-enc', 'vec1', 'vec2', 'vec3', 'vec-1', 'vec-2', 'vec-3', 'inv_vec1', 'inv_vec2', 'inv_vec3', 'inv_vec-1', 'inv_vec-2', 'inv_vec-3']
-
+    
     features3d:
         possible features are ['standard_normal_noise', 'implicit-valence','degree','hybridization','chirality','mass','electronegativity','aromatic-bond','formal-charge','radical-electron','in-ring','atomic-number', 'pos-enc', 'vec1', 'vec2', 'vec3', 'vec-1', 'vec-2', 'vec-3', 'inv_vec1', 'inv_vec2', 'inv_vec3', 'inv_vec-1', 'inv_vec-2', 'inv_vec-3']
     e_features:
         possible are ['bond-type-onehot','stereo','conjugated','in-ring-edges']
     others: list
         TODO
-
     Examples
     --------
-    >>> dataset = QM9Geom(return_types=['dgl_graph', 'targets', 'coordinates'])
-
+    
     The dataset instance is an iterable
-
+    >>> dataset = QM9Geom(return_types=['dgl_graph', 'targets', 'coordinates'])
+    
     >>> len(data)
     130831
     >>> g, label, coordinates = data[0]
@@ -329,6 +326,13 @@ class QM9Geom(Dataset):
         return tuple(data)
 
     def get_graph(self, idx, e_start, e_end):
+        """
+
+        :param idx: 
+        :param e_start: 
+        :param e_end: 
+
+        """
         if self.prefetch_graphs:
             g = self.dgl_graphs[idx]
         else:
@@ -337,6 +341,13 @@ class QM9Geom(Dataset):
         return g
 
     def get_complete_graph(self, idx, pairwise_start, n_atoms):
+        """
+
+        :param idx: 
+        :param pairwise_start: 
+        :param n_atoms: 
+
+        """
         if self.prefetch_graphs:
             g = self.complete_graphs[idx]
         else:
@@ -346,6 +357,15 @@ class QM9Geom(Dataset):
         return g
 
     def get_mol_complete_graph(self, idx, e_start, e_end, pairwise_start, n_atoms):
+        """
+
+        :param idx: 
+        :param e_start: 
+        :param e_end: 
+        :param pairwise_start: 
+        :param n_atoms: 
+
+        """
         if self.prefetch_graphs:
             g = self.mol_complete_graphs[idx]
         else:
@@ -357,6 +377,17 @@ class QM9Geom(Dataset):
         return g
 
     def data_by_type(self, idx, return_type, e_start, e_end, pairwise_start, start, n_atoms):
+        """
+
+        :param idx: 
+        :param return_type: 
+        :param e_start: 
+        :param e_end: 
+        :param pairwise_start: 
+        :param start: 
+        :param n_atoms: 
+
+        """
         if return_type == 'dgl_graph':
             g = self.get_graph(idx, e_start, e_end).to(self.device)
             g.ndata['f'] = self.features_tensor[start: start + n_atoms].to(self.device)
@@ -484,6 +515,7 @@ class QM9Geom(Dataset):
             raise Exception(f'return type not supported: ', return_type)
 
     def process(self):
+        """ """
         print('processing data from ({}) and saving it to ({})'.format(self.qm9_directory,
                                                                        os.path.join(self.qm9_directory, 'processed')))
 
@@ -581,6 +613,7 @@ class QM9Geom(Dataset):
         torch.save(data_dict, os.path.join(self.qm9_directory, 'processed', self.processed_file))
 
     def process_distances(self):
+        """ """
         print('processing distances from ({}) and saving it to ({})'.format(self.qm9_directory,
                                                                             os.path.join(self.qm9_directory,
                                                                                          'processed')))

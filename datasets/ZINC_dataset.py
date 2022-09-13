@@ -8,9 +8,7 @@ from tqdm import tqdm
 
 
 class ZINCDataset(Dataset):
-    """ The ZINC dataset as found here https://github.com/graphdeeplearning/benchmarking-gnns/blob/master/data/molecules/prepare_molecules.ipynb
-
-    """
+    """The ZINC dataset as found here https://github.com/graphdeeplearning/benchmarking-gnns/blob/master/data/molecules/prepare_molecules.ipynb"""
 
     def __init__(self, split, device='cuda:0', normalize=False, prefetch_graphs=True, **kwargs):
 

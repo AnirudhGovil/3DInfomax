@@ -28,12 +28,13 @@ chirality = {ChiralType.CHI_TETRAHEDRAL_CW: -1.,
 
 
 def one_k_encoding(value, choices):
-    """
-    Creates a one-hot encoding with an extra category for uncommon values.
+    """Creates a one-hot encoding with an extra category for uncommon values.
+
     :param value: The value for which the encoding should be one.
     :param choices: A list of possible values.
-    :return: A one-hot encoding of the :code:`value` in a list of length :code:`len(choices) + 1`.
+    :returns: A one-hot encoding of the :code:`value` in a list of length :code:`len(choices) + 1`.
              If :code:`value` is not in :code:`choices`, then the final element in the encoding is 1.
+
     """
     encoding = [0] * (len(choices) + 1)
     index = choices.index(value) if value in choices else -1
@@ -43,6 +44,7 @@ def one_k_encoding(value, choices):
 
 
 class FileLoaderQM9(Dataset):
+    """ """
     def __init__(self, return_types=[], root='dataset/GEOM', transform=None, pre_transform=None, max_confs=10,
                  **kwargs):
         self.max_confs = max_confs
@@ -54,15 +56,22 @@ class FileLoaderQM9(Dataset):
         self.dihedral_pairs = {}
 
     def open_pickle(self, mol_path):
+        """
+
+        :param mol_path: 
+
+        """
         with open(mol_path, "rb") as f:
             dic = pickle.load(f)
         return dic
 
     @property
     def processed_file_names(self):
+        """ """
         return ['valid_files_qm9.pt']
 
     def process(self):
+        """ """
         valid_files = []
         for pickle_file in tqdm(sorted(glob.glob(osp.join(self.root, 'qm9', '*.pickle')))):
             mol_dic = self.open_pickle(pickle_file)
@@ -72,9 +81,15 @@ class FileLoaderQM9(Dataset):
         torch.save(valid_files, self.processed_paths[0])
 
     def len(self):
+        """ """
         return len(self.pickle_files)
 
     def get(self, idx):
+        """
+
+        :param idx: 
+
+        """
 
         pickle_file = self.pickle_files[idx]
         mol_dic = self.open_pickle(pickle_file)
@@ -93,6 +108,11 @@ class FileLoaderQM9(Dataset):
             return [data]
 
     def featurize_mol(self, mol_dic):
+        """
+
+        :param mol_dic: 
+
+        """
         confs = mol_dic['conformers']
         random.shuffle(confs)  # shuffle confs
         name = mol_dic["smiles"]

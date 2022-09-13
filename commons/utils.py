@@ -13,6 +13,11 @@ from torch.utils.tensorboard import SummaryWriter
 
 
 def seed_all(seed):
+    """The random seed is set to 123 by default
+
+    :param seed: 
+
+    """
     if not seed:
         seed = 0
 
@@ -29,6 +34,12 @@ def seed_all(seed):
 
 
 def get_random_indices(length, seed=123):
+    """Using the seed we sampe the indices to get a distribution
+
+    :param length: 
+    :param seed:  (Default value = 123)
+
+    """
     st0 = np.random.get_state()
     np.random.seed(seed)
     random_indices = np.random.permutation(length)
@@ -37,6 +48,13 @@ def get_random_indices(length, seed=123):
 
 edges_dic = {}
 def get_adj_matrix(n_nodes, batch_size, device):
+    """Returns the adjacency matrix of the graph
+
+    :param n_nodes: 
+    :param batch_size: 
+    :param device: 
+
+    """
     if n_nodes in edges_dic:
         edges_dic_b = edges_dic[n_nodes]
         if batch_size in edges_dic_b:
@@ -58,15 +76,15 @@ def get_adj_matrix(n_nodes, batch_size, device):
     return edges
 
 def flatten_dict(params: Dict[Any, Any], delimiter: str = '/') -> Dict[str, Any]:
-    """
-    Flatten hierarchical dict, e.g. ``{'a': {'b': 'c'}} -> {'a/b': 'c'}``.
-
+    """Flatten hierarchical dict, e.g. ``{'a': {'b': 'c'}} -> {'a/b': 'c'}``.
+    
     Args:
-        params: Dictionary containing the hyperparameters
-        delimiter: Delimiter to express the hierarchy. Defaults to ``'/'``.
 
-    Returns:
-        Flattened dict.
+    :param delimiter: Delimiter to express the hierarchy
+    :param params: Dict[Any: 
+    :param Any]: 
+    :param delimiter: str:  (Default value = '/')
+    :returns: Flattened dict.
     Examples:
         flatten_dict({'a': {'b': 'c'}})
         {'a/b': 'c'}
@@ -74,9 +92,16 @@ def flatten_dict(params: Dict[Any, Any], delimiter: str = '/') -> Dict[str, Any]
         {'a/b': 123}
         flatten_dict({5: {'a': 123}})
         {'5/a': 123}
+
     """
 
     def _dict_generator(input_dict, prefixes=None):
+        """
+
+        :param input_dict: 
+        :param prefixes:  (Default value = None)
+
+        """
         prefixes = prefixes[:] if prefixes else []
         if isinstance(input_dict, MutableMapping):
             for key, value in input_dict.items():
@@ -101,6 +126,14 @@ def flatten_dict(params: Dict[Any, Any], delimiter: str = '/') -> Dict[str, Any]
 
 
 def fourier_encode_dist(x, num_encodings=4, include_self=True):
+    """Using the Forrier Series to to encode the distance between atoms by mapping them to
+    higher dimensional space using high frequency cosines
+
+    :param x: 
+    :param num_encodings:  (Default value = 4)
+    :param include_self:  (Default value = True)
+
+    """
     x = x.unsqueeze(-1)
     device, dtype, orig_x = x.device, x.dtype, x
     scales = 2 ** torch.arange(num_encodings, device=device, dtype=dtype)
@@ -111,6 +144,15 @@ def fourier_encode_dist(x, num_encodings=4, include_self=True):
 
 
 def tensorboard_singular_value_plot(predictions, targets, writer: SummaryWriter, step, data_split):
+    """Helper function for displaying data on the tensorboard
+
+    :param predictions: 
+    :param targets: 
+    :param writer: SummaryWriter: 
+    :param step: 
+    :param data_split: 
+
+    """
     u, s, v = torch.pca_lowrank(predictions.detach().cpu(), q=min(predictions.shape))
     fig, ax = plt.subplots()
     s = 100 * s / s.sum()
@@ -122,6 +164,14 @@ def tensorboard_singular_value_plot(predictions, targets, writer: SummaryWriter,
 
 
 def tensorboard_gradient_magnitude(optimizer: torch.optim.Optimizer, writer: SummaryWriter, step, param_groups=[0]):
+    """Function for the tensorboard to calculate the magnitude of the gradient
+
+    :param optimizer: torch.optim.Optimizer: 
+    :param writer: SummaryWriter: 
+    :param step: 
+    :param param_groups:  (Default value = [0])
+
+    """
     for i, param_group in enumerate(optimizer.param_groups):
         if i in param_groups:
             all_params = []
@@ -137,12 +187,12 @@ TENSORBOARD_FUNCTIONS = {
 }
 
 def move_to_device(element, device):
-    '''
-    takes arbitrarily nested list and moves everything in it to device if it is a dgl graph or a torch tensor
+    """takes arbitrarily nested list and moves everything in it to device if it is a dgl graph or a torch tensor
+
     :param element: arbitrarily nested list
-    :param device:
-    :return:
-    '''
+    :param device: return:
+
+    """
     if isinstance(element, list):
         return [move_to_device(x, device) for x in element]
     else:

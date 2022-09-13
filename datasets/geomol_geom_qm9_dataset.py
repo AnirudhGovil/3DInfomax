@@ -26,6 +26,7 @@ chirality = {ChiralType.CHI_TETRAHEDRAL_CW: -1.,
 
 
 class QM9GeomolFeatDataset(Dataset):
+    """ """
 
     def __init__(self, return_types: list = None, target_tasks: list = None, normalize: bool = True, device='cuda:0',
                  num_conformers=1, **kwargs):
@@ -113,6 +114,11 @@ class QM9GeomolFeatDataset(Dataset):
         return tuple(data)
 
     def get_pairwise(self, n_atoms):
+        """
+
+        :param n_atoms: 
+
+        """
         if n_atoms in self.pairwise:
             src, dst = self.pairwise[n_atoms]
             return src.to(self.device), dst.to(self.device)
@@ -124,6 +130,15 @@ class QM9GeomolFeatDataset(Dataset):
             return src, dst
 
     def get_graph(self, idx, e_start, e_end, n_atoms, start):
+        """
+
+        :param idx: 
+        :param e_start: 
+        :param e_end: 
+        :param n_atoms: 
+        :param start: 
+
+        """
         if idx in self.dgl_graphs:
             return self.dgl_graphs[idx].to(self.device)
         else:
@@ -136,6 +151,13 @@ class QM9GeomolFeatDataset(Dataset):
             return g
 
     def get_complete_graph(self, idx, n_atoms, start):
+        """
+
+        :param idx: 
+        :param n_atoms: 
+        :param start: 
+
+        """
         if idx in self.complete_graphs:
             return self.complete_graphs[idx].to(self.device)
         else:
@@ -149,6 +171,15 @@ class QM9GeomolFeatDataset(Dataset):
             return g
 
     def get_mol_complete_graph(self, idx, e_start, e_end, n_atoms, start):
+        """
+
+        :param idx: 
+        :param e_start: 
+        :param e_end: 
+        :param n_atoms: 
+        :param start: 
+
+        """
         if idx in self.mol_complete_graphs:
             return self.mol_complete_graphs[idx].to(self.device)
         else:
@@ -162,6 +193,16 @@ class QM9GeomolFeatDataset(Dataset):
             return g
 
     def data_by_type(self, idx, return_type, e_start, e_end, start, n_atoms):
+        """
+
+        :param idx: 
+        :param return_type: 
+        :param e_start: 
+        :param e_end: 
+        :param start: 
+        :param n_atoms: 
+
+        """
         if return_type == 'conformations':
             if idx in self.conformer_graphs:
                 return self.conformer_graphs[idx].to(self.device)
@@ -283,6 +324,7 @@ class QM9GeomolFeatDataset(Dataset):
             raise Exception(f'return type not supported: ', return_type)
 
     def process(self):
+        """ """
         print('processing data from ({}) and saving it to ({})'.format(self.directory,
                                                                        os.path.join(self.directory, 'processed')))
 

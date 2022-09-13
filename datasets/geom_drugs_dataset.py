@@ -18,28 +18,7 @@ hartree2eV = physical_constants['hartree-electron volt relationship'][0]
 
 
 class GEOMDrugs(Dataset):
-    """The GEOM Drugs Dataset using drugs_crude.msgpack as input from https://github.com/learningmatter-mit/geom
-    Attributes
-    ----------
-    return_types: list
-        A list with which types of data should be loaded and returened by getitems. Possible options are
-        ['dgl_graph', 'raw_features', 'coordinates', 'mol_id', 'targets', 'one_hot_bond_types', 'edge_indices', 'smiles', 'atomic_number_long']
-        and the default is ['dgl_graph', 'targets']
-    target_tasks: list
-        A list specifying which targets should be included in the returend targets, if targets are returned
-        options are ['A', 'B', 'C', 'mu', 'alpha', 'homo', 'lumo', 'gap', 'r2', 'zpve', 'u0', 'u298', 'h298', 'g298', 'cv', 'u0_atom', 'u298_atom', 'h298_atom', 'g298_atom']
-        and default is ['mu', 'alpha', 'homo', 'lumo', 'gap', 'r2', 'zpve', 'u0', 'u298', 'h298', 'g298', 'cv']
-        which is the stuff that is commonly predicted by papers like DimeNet, Equivariant GNNs, Spherical message passing
-        The returned targets will be in the order specified by this list
-    features:
-        possible features are ['standard_normal_noise', 'implicit-valence','degree','hybridization','chirality','mass','electronegativity','aromatic-bond','formal-charge','radical-electron','in-ring','atomic-number', 'pos-enc', 'vec1', 'vec2', 'vec3', 'vec-1', 'vec-2', 'vec-3', 'inv_vec1', 'inv_vec2', 'inv_vec3', 'inv_vec-1', 'inv_vec-2', 'inv_vec-3']
-
-    features3d:
-        possible features are ['standard_normal_noise', 'implicit-valence','degree','hybridization','chirality','mass','electronegativity','aromatic-bond','formal-charge','radical-electron','in-ring','atomic-number', 'pos-enc', 'vec1', 'vec2', 'vec3', 'vec-1', 'vec-2', 'vec-3', 'inv_vec1', 'inv_vec2', 'inv_vec3', 'inv_vec-1', 'inv_vec-2', 'inv_vec-3']
-    e_features:
-        possible are ['bond-type-onehot','stereo','conjugated','in-ring-edges']
-
-    """
+    """The GEOM Drugs Dataset using drugs_crude.msgpack as input from https://github.com/learningmatter-mit/geom"""
 
     def __init__(self, return_types: list = None, target_tasks: list = None, normalize: bool = True, device='cuda:0', num_conformers=1, **kwargs):
 
@@ -121,6 +100,11 @@ class GEOMDrugs(Dataset):
         return tuple(data)
 
     def get_pairwise(self, n_atoms):
+        """
+
+        :param n_atoms: 
+
+        """
         if n_atoms in self.pairwise:
             src, dst = self.pairwise[n_atoms]
             return src.to(self.device), dst.to(self.device)
@@ -132,6 +116,15 @@ class GEOMDrugs(Dataset):
             return src, dst
 
     def get_graph(self, idx, e_start, e_end, n_atoms, start):
+        """
+
+        :param idx: 
+        :param e_start: 
+        :param e_end: 
+        :param n_atoms: 
+        :param start: 
+
+        """
         if idx in self.dgl_graphs:
             return self.dgl_graphs[idx].to(self.device)
         else:
@@ -144,6 +137,13 @@ class GEOMDrugs(Dataset):
             return g
 
     def get_complete_graph(self, idx, n_atoms, start):
+        """
+
+        :param idx: 
+        :param n_atoms: 
+        :param start: 
+
+        """
         if idx in self.complete_graphs:
             return self.complete_graphs[idx].to(self.device)
         else:
@@ -157,6 +157,15 @@ class GEOMDrugs(Dataset):
             return g
 
     def get_mol_complete_graph(self, idx, e_start, e_end, n_atoms, start):
+        """
+
+        :param idx: 
+        :param e_start: 
+        :param e_end: 
+        :param n_atoms: 
+        :param start: 
+
+        """
         if idx in self.mol_complete_graphs:
             return self.mol_complete_graphs[idx].to(self.device)
         else:
@@ -170,6 +179,16 @@ class GEOMDrugs(Dataset):
             return g
 
     def data_by_type(self, idx, return_type, e_start, e_end, start, n_atoms):
+        """
+
+        :param idx: 
+        :param return_type: 
+        :param e_start: 
+        :param e_end: 
+        :param start: 
+        :param n_atoms: 
+
+        """
         if return_type == 'conformations':
             if idx in self.conformer_graphs:
                 return self.conformer_graphs[idx].to(self.device)
@@ -288,6 +307,7 @@ class GEOMDrugs(Dataset):
             raise Exception(f'return type not supported: ', return_type)
 
     def process(self):
+        """ """
         print('processing data from ({}) and saving it to ({})'.format(self.directory,
                                                                        os.path.join(self.directory, 'processed')))
 

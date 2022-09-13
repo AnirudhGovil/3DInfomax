@@ -10,15 +10,15 @@ from datasets.qm9_dataset import QM9Dataset
 
 
 class ConstantNumberAtomsCategorical(Sampler[List[int]]):
-    r"""Wraps another sampler to yield a mini-batch of indices.
+    """r"""Wraps another sampler to yield a mini-batch of indices.
 
-    Args:
-        sampler (Sampler or Iterable): Base sampler. Can be any iterable object
-        batch_size (int): Size of mini-batch.
-        drop_last (bool): If ``True``, the sampler will drop the last batch if
+    :param sampler: Base sampler. Can be any iterable object
+    :type sampler: Sampler or Iterable
+    :param batch_size: Size of mini-batch.
+    :type batch_size: int
+    :param drop_last: If ``True``, the sampler will drop the last batch if
             its size would be less than ``batch_size``
-
-    """
+    :type drop_last: bool
 
     def __init__(self, data_source: QM9Dataset, batch_size: int, indices: List, replacement: bool = False,
                  num_samples: Optional[int] = None, generator=None, drop_last=False) -> None:
@@ -66,15 +66,15 @@ class ConstantNumberAtomsCategorical(Sampler[List[int]]):
 
 
 class ConstantNumberAtomsChunks(Sampler[List[int]]):
-    r"""Wraps another sampler to yield a mini-batch of indices.
+    """r"""Wraps another sampler to yield a mini-batch of indices.
 
-    Args:
-        sampler (Sampler or Iterable): Base sampler. Can be any iterable object
-        batch_size (int): Size of mini-batch.
-        drop_last (bool): If ``True``, the sampler will drop the last batch if
+    :param sampler: Base sampler. Can be any iterable object
+    :type sampler: Sampler or Iterable
+    :param batch_size: Size of mini-batch.
+    :type batch_size: int
+    :param drop_last: If ``True``, the sampler will drop the last batch if
             its size would be less than ``batch_size``
-
-    """
+    :type drop_last: bool
 
     def __init__(self, data_source: QM9Dataset, batch_size: int, indices: List, drop_last=False,
                  number_chunks=50) -> None:
@@ -119,6 +119,7 @@ class ConstantNumberAtomsChunks(Sampler[List[int]]):
             yield batch
 
     def get_clusters(self):
+        """ """
         shuffled_among_same_n_atoms = []
         for i, _ in enumerate(self.n_atoms_separators[:-1]):
             same_n_atoms = self.indices_sorted_by_n_atoms[self.n_atoms_separators[i]:self.n_atoms_separators[i + 1]]

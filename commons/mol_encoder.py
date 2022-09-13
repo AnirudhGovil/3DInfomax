@@ -10,10 +10,12 @@ full_bond_feature_dims = get_bond_feature_dims()
 class AtomEncoder(torch.nn.Module):
 
     def __init__(self, emb_dim, padding=False):
-        """
-        :param emb_dim: the dimension that the returned embedding will have
-        :param padding: if this is true then -1 will be mapped to padding
-        """
+    """
+
+    :param emb_dim: the dimension that the returned embedding will have
+    :param padding: if this is true then -1 will be mapped to padding
+
+    """
         super(AtomEncoder, self).__init__()
 
         self.atom_embedding_list = torch.nn.ModuleList()
@@ -28,10 +30,16 @@ class AtomEncoder(torch.nn.Module):
             self.atom_embedding_list.append(emb)
 
     def reset_parameters(self):
+        """ """
         for i, embedder in enumerate(self.atom_embedding_list):
             embedder.weight.data.uniform_(-sqrt(3), sqrt(3))
 
     def forward(self, x):
+        """
+
+        :param x: 
+
+        """
         x_embedding = 0
         for i in range(x.shape[1]):
             if self.padding:
@@ -45,10 +53,12 @@ class AtomEncoder(torch.nn.Module):
 class BondEncoder(torch.nn.Module):
 
     def __init__(self, emb_dim, padding=False):
-        """
-        :param emb_dim: the dimension that the returned embedding will have
-        :param padding: if this is true then -1 will be mapped to padding
-        """
+    """
+
+    :param emb_dim: the dimension that the returned embedding will have
+    :param padding: if this is true then -1 will be mapped to padding
+
+    """
         super(BondEncoder, self).__init__()
 
         self.bond_embedding_list = torch.nn.ModuleList()
@@ -63,6 +73,11 @@ class BondEncoder(torch.nn.Module):
             self.bond_embedding_list.append(emb)
 
     def forward(self, edge_attr):
+        """
+
+        :param edge_attr: 
+
+        """
         bond_embedding = 0
         for i in range(edge_attr.shape[1]):
             if self.padding:

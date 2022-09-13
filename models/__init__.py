@@ -1,3 +1,4 @@
+'''Initialises the model'''
 from inspect import isclass
 from pkgutil import iter_modules
 from pathlib import Path
